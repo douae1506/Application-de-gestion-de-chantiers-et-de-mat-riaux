@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Http\Controllers\ActivityController;
 
 class Chantier extends Model
 {
@@ -48,6 +49,11 @@ class Chantier extends Model
     public function client()
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function responsable()
+    {
+        return $this->belongsTo(User::class, 'responsable_id');
     }
 
     // Un chantier possède plusieurs projets
@@ -199,4 +205,55 @@ class Chantier extends Model
         }
         $this->save();
     }
+
+    // app/Models/Chantier.php
+protected static function booted()
+{
+    static::created(function ($chantier) {
+        ActivityController::log(
+            auth()->id(),
+            'created',
+            'Chantier',
+            $chantier->id,
+            $chantier->nom,
+            "a créé le chantier « {$chantier->nom} »",
+            ['reference' => $chantier->reference, 'type' => $chantier->type]
+        );
+    });
+
+    static::updated(function ($chantier) {
+        $changes = $chantier->getChanges();
+        $original = $chantier->getOriginal();
+        $dirty = [];
+
+        foreach ($changes as $key => $value) {
+            if ($key === 'updated_at') continue;
+            $dirty[$key] = ['avant' => $original[$key] ?? null, 'après' => $value];
+        }
+
+        if (!empty($dirty)) {
+            ActivityController::log(
+                auth()->id(),
+                'updated',
+                'Chantier',
+                $chantier->id,
+                $chantier->nom,
+                "a modifié le chantier « {$chantier->nom} »",
+                $dirty
+            );
+        }
+    });
+
+    static::deleted(function ($chantier) {
+        ActivityController::log(
+            auth()->id(),
+            'deleted',
+            'Chantier',
+            $chantier->id,
+            $chantier->nom,
+            "a supprimé le chantier « {$chantier->nom} »",
+            ['reference' => $chantier->reference]
+        );
+    });
+}
 }

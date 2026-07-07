@@ -628,7 +628,7 @@ onMounted(async () => {
 })
 </script>
 <style scoped>
-.mv-wrap { min-height: 100vh; background: #f8fafc; margin: -30px !important; padding: 0 2rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+.mv-wrap { min-height: 100vh; background: #f8fafc; margin: -42px !important; padding: 0 2rem; font-family: ui-sans-serif, system-ui, sans-serif; }
 .mv-header { display: flex; justify-content: space-between; align-items: center; padding: 2rem 0 1.5rem; flex-wrap: wrap; gap: 1rem; }
 .mv-header h1 { margin: 0 0 .25rem; font-size: 1.75rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
 .mv-header p { margin: 0; color: #64748b; font-size: .95rem; }

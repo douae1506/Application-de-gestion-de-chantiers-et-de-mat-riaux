@@ -284,7 +284,7 @@ onMounted(() => {
 .fv-wrap {
   min-height: 100vh;
   background: #f4f7fc;
-  margin: -30px !important;
+  margin: -42px !important;
   padding: 0 1.5rem;
   font-family: ui-sans-serif, system-ui, sans-serif;
 }

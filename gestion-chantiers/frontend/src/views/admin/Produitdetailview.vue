@@ -219,7 +219,7 @@ onMounted(fetchProduit)
 </script>
 
 <style scoped>
-.app-layout-clean { min-height: 100vh; background: #f4f7fc; font-family: ui-sans-serif, system-ui, sans-serif; margin: -30px !important; }
+.app-layout-clean { min-height: 100vh; background: #f4f7fc; font-family: ui-sans-serif, system-ui, sans-serif; margin: -42px !important; }
 .main-content-full { padding: 0 1.5rem; max-width: 100%; }
 .loading-state { display: flex; align-items: center; gap: 1rem; justify-content: center; min-height: 300px; color: #64748b; }
 .spinner { width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; }

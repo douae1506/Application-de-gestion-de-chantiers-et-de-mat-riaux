@@ -426,7 +426,7 @@ onMounted(async () => { await fetchStocks(); await fetchProduits() })
 </script>
 
 <style scoped>
-.sv-wrap { min-height: 100vh; background: #f4f7fc; margin: -30px !important; padding: 0 1.5rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+.sv-wrap { min-height: 100vh; background: #f4f7fc; margin: -42px !important; padding: 0 1.5rem; font-family: ui-sans-serif, system-ui, sans-serif; }
 .sv-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.5rem 0 1rem; }
 .sv-header h1 { margin: 0 0 .25rem; font-size: 1.6rem; font-weight: 800; color: #0f172a; }
 .sv-header p { margin: 0; color: #64748b; font-size: .9rem; }

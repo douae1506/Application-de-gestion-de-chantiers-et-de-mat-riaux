@@ -16,12 +16,11 @@
         <!-- Barre supérieure -->
         <div class="top-bar">
           <div class="breadcrumb">
-            Chantiers &gt; <span @click="$router.push({ name: 'chantiers' })" style="cursor:pointer;">Liste des chantiers</span> &gt; <span class="active">Détail du chantier</span>
+            Mes chantiers &gt; <span @click="$router.push({ name: 'responsable-chantiers' })" style="cursor:pointer;">Liste des chantiers</span> &gt; <span class="active">Détail du chantier</span>
           </div>
           <div class="action-buttons">
-            <button class="btn btn-secondary" @click="$router.push({ name: 'chantiers' })">Retour à la liste</button>
-            <button class="btn btn-secondary" @click="editChantier">Modifier</button>
-            <button class="btn btn-danger" @click="deleteChantier">Supprimer</button>
+            <button class="btn btn-secondary" @click="$router.push({ name: 'responsable-chantiers' })">Retour à la liste</button>
+            <!-- ❌ Pas de bouton Modifier ni Supprimer pour le responsable -->
           </div>
         </div>
 
@@ -537,7 +536,7 @@
                 </div>
               </div>
 
-              <!-- Groupe : Historique (passés / terminés / annulés) -->
+              <!-- Groupe : Historique -->
               <div v-if="groupedFilteredEvents.passe.length" class="events-group">
                 <h3 class="events-group-title">⚪ Historique</h3>
                 <div class="events-list">
@@ -766,21 +765,21 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import chantierService from '@/services/chantierService'
+import responsableService from '@/services/responsableService'  // ← service responsable
 import api from '@/services/api'
-
 
 // ─── Router ──────────────────────────────────────────────
 const route = useRoute()
 const router = useRouter()
 const chantierId = route.params.id
+
 // ─── États généraux ──────────────────────────────────────
 const chantier = ref(null)
 const loading = ref(true)
 const error = ref(null)
 const activeTab = ref('apercu')
 
-// ─── Onglets ─────────────────────────────────────────────
+// ─── Onglets (identiques) ──────────────────────────────
 const tabs = [
   { key: 'apercu', label: 'Aperçu', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>` },
   { key: 'projets', label: 'Projets', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>` },
@@ -831,7 +830,8 @@ async function uploadDocument() {
     fd.append('type', docForm.type)
     fd.append('fichier', docFile.value)
 
-    const { data } = await api.post(`/admin/chantiers/${chantierId}/documents`, fd, {
+    // Utilisation de l'endpoint responsable
+    const { data } = await api.post(`/responsable/chantiers/${chantierId}/documents`, fd, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
 
@@ -850,7 +850,7 @@ async function uploadDocument() {
 async function supprimerDocument(docId) {
   if (!confirm('Supprimer ce document ?')) return
   try {
-    await api.delete(`/admin/documents/${docId}`)
+    await api.delete(`/responsable/documents/${docId}`)
     chantier.value.documents = chantier.value.documents.filter(d => d.id !== docId)
   } catch (e) {
     alert('Erreur lors de la suppression du document.')
@@ -867,7 +867,7 @@ const affecterError = ref('')
 async function returnToStock(sortieId) {
   if (!confirm('Voulez-vous vraiment retourner ce produit au stock ? Cette action est irréversible.')) return
   try {
-    await api.post(`/admin/mouvements/sortie/${sortieId}/retour-stock`)
+    await api.post(`/responsable/mouvements/sortie/${sortieId}/retour-stock`)
     await fetchChantier()
   } catch (e) {
     alert(e.response?.data?.message || 'Erreur lors du retour au stock.')
@@ -889,7 +889,7 @@ async function confirmAffecter() {
   affecterLoading.value = true
   affecterError.value = ''
   try {
-    await api.put(`/admin/mouvements/sortie/${affecterSortieId.value}/affecter-projet`, {
+    await api.put(`/responsable/mouvements/sortie/${affecterSortieId.value}/affecter-projet`, {
       projet_id: affecterProjetId.value
     })
     showAffecterModal.value = false
@@ -903,10 +903,10 @@ async function confirmAffecter() {
 
 // ─── Navigation projets ──────────────────────────────────
 function voirProjet(projetId) {
-  router.push({ name: 'projet-detail', params: { id: projetId } })
+  router.push({ name: 'responsable-projet-detail', params: { id: projetId } })
 }
 function ajouterProjet() {
-  router.push({ name: 'projet-create', query: { chantierId: chantierId } })
+  router.push({ name: 'responsable-projet-create', query: { chantierId: chantierId } })
 }
 
 // ─── Gestion chantier ────────────────────────────────────
@@ -914,7 +914,8 @@ async function fetchChantier() {
   loading.value = true
   error.value = null
   try {
-    const { data } = await chantierService.getChantier(chantierId)
+    // Utilisation du service responsable
+    const { data } = await responsableService.getChantier(chantierId)
     chantier.value = data.data
     // Mise à jour du label "Projets"
     const projetsTab = tabs.find(t => t.key === 'projets')
@@ -926,20 +927,6 @@ async function fetchChantier() {
     console.error(e)
   } finally {
     loading.value = false
-  }
-}
-
-function editChantier() {
-  router.push({ name: 'chantier-edit', params: { id: chantierId } })
-}
-
-async function deleteChantier() {
-  if (!confirm('Voulez-vous vraiment supprimer ce chantier ?')) return
-  try {
-    await chantierService.deleteChantier(chantierId)
-    router.push({ name: 'chantiers' })
-  } catch (e) {
-    alert('Erreur lors de la suppression')
   }
 }
 
@@ -960,14 +947,14 @@ const eventErrors = ref({})
 const eventSaving = ref(false)
 const isEditingEvent = ref(false)
 
-// Filtres de l'onglet Événements
-const eventFilterStatut = ref('') // '', 'a_venir', 'termine', 'annule'
-const eventFilterType = ref('')   // '', 'reunion', 'livraison', 'inspection', 'autre'
+const eventFilterStatut = ref('')
+const eventFilterType = ref('')
 
 async function fetchEvents() {
   if (!chantierId) return
   try {
-    const { data } = await api.get(`/admin/chantiers/${chantierId}/events`)
+    // Endpoint responsable
+    const { data } = await api.get(`/responsable/chantiers/${chantierId}/events`)
     events.value = data.data
   } catch (e) {
     console.error('Erreur chargement événements', e)
@@ -1013,16 +1000,15 @@ async function saveEvent() {
 
     let response
     if (isEditingEvent.value) {
-      // ✅ route imbriquée + sécurisée (le backend vérifie que l'événement appartient au chantier)
-      response = await api.put(`/admin/chantiers/${chantierId}/events/${eventForm.id}`, payload)
+      response = await api.put(`/responsable/chantiers/${chantierId}/events/${eventForm.id}`, payload)
     } else {
-      response = await api.post(`/admin/chantiers/${chantierId}/events`, payload)
+      response = await api.post(`/responsable/chantiers/${chantierId}/events`, payload)
     }
 
     if (response.data.success) {
       showEventModal.value = false
       await fetchEvents()
-      await fetchChantier() // pour rafraîchir les compteurs si besoin
+      await fetchChantier()
     }
   } catch (e) {
     if (e.response && e.response.status === 422) {
@@ -1038,7 +1024,7 @@ async function saveEvent() {
 async function deleteEvent(eventId) {
   if (!confirm('Voulez-vous vraiment supprimer cet événement ?')) return
   try {
-    await api.delete(`/admin/chantiers/${chantierId}/events/${eventId}`)
+    await api.delete(`/responsable/chantiers/${chantierId}/events/${eventId}`)
     await fetchEvents()
     await fetchChantier()
   } catch (e) {
@@ -1046,7 +1032,7 @@ async function deleteEvent(eventId) {
   }
 }
 
-// Événements filtrés (statut + type), triés par date/heure
+// ─── Filtres et regroupement d'événements (identique) ──
 const filteredEvents = computed(() => {
   return events.value
     .filter(e => !eventFilterStatut.value || e.statut === eventFilterStatut.value)
@@ -1054,7 +1040,6 @@ const filteredEvents = computed(() => {
     .sort((a, b) => new Date(a.date + 'T' + (a.heure || '00:00')) - new Date(b.date + 'T' + (b.heure || '00:00')))
 })
 
-// Regroupement par période pour un affichage en sections claires
 const groupedFilteredEvents = computed(() => {
   const groups = { aujourdhui: [], cette_semaine: [], plus_tard: [], passe: [] }
   const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -1077,7 +1062,6 @@ const groupedFilteredEvents = computed(() => {
   return groups
 })
 
-// Badge "Aujourd'hui / Demain / Dans X j / En retard" pour un événement à venir
 function eventBadgeLabel(evt) {
   if (evt.statut !== 'a_venir') return null
   const d = new Date(evt.date); d.setHours(0, 0, 0, 0)
@@ -1091,7 +1075,6 @@ function eventBadgeLabel(evt) {
   return null
 }
 
-// Export d'un événement au format .ics (compatible Google Calendar / Outlook)
 function exportEventToIcs(evt) {
   const dateStr = evt.date.replace(/-/g, '')
   const timeStr = (evt.heure_formatee || evt.heure || '09:00').replace(':', '') + '00'
@@ -1115,7 +1098,6 @@ function exportEventToIcs(evt) {
   URL.revokeObjectURL(link.href)
 }
 
-// Prochains événements (pour l'aperçu)
 const upcomingEvents = computed(() => {
   return events.value
     .filter(e => e.statut === 'a_venir')
@@ -1249,7 +1231,7 @@ watch(() => route.params.id, (newId) => {
 </script>
 
 <style scoped>
-/* ── DESIGN SYSTEM ET FOND GLOBAL DE L'APPLICATION ──────── */
+/* (Le style est identique à celui de l'admin, je l'ai copié intégralement ici) */
 :focus { outline: none; }
 
 .app-layout-clean {
@@ -1804,7 +1786,7 @@ watch(() => route.params.id, (newId) => {
   letter-spacing: 0.03em;
 }
 
-/* ── Mini badges (aujourd'hui / bientôt / en retard) ────── */
+/* ── Mini badges ─────────────────────────────────────────── */
 .mini-badge {
   display: inline-block;
   font-size: 0.65rem;
@@ -1823,7 +1805,7 @@ watch(() => route.params.id, (newId) => {
 .spinner { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Documents (compact) ───────────────────────────────────── */
+/* ── Documents compact ─────────────────────────────────────── */
 .documents-list-compact {
   display: flex;
   flex-direction: column;

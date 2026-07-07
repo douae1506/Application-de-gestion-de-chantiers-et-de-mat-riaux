@@ -15,6 +15,9 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\PhaseController;
 use App\Http\Controllers\FournisseurController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ResponsableController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
@@ -112,12 +115,52 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/chantiers/{chantier}/events/{event}', [EventController::class, 'show']);
         Route::put('/chantiers/{chantier}/events/{event}', [EventController::class, 'update']);
         Route::delete('/chantiers/{chantier}/events/{event}', [EventController::class, 'destroy']);
+
+        Route::get('/activities', [ActivityController::class, 'index']);
+        Route::get('/activities/stats', [ActivityController::class, 'stats']);
+        Route::get('/activities/subject/{type}/{id}', [ActivityController::class, 'bySubject']);
+        Route::get('/dashboard/stats', [App\Http\Controllers\DashboardController::class, 'stats']);
+        
     });
 
     Route::apiResource('projets', ProjetController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 
     Route::middleware('role:admin,chef_projet')->prefix('chef-projet')->group(function () {
         Route::get('/dashboard', fn () => response()->json(['message' => 'Tableau de bord Chef de Projet']));
+    });
+
+    // ─────────────────────────────────────────────────────────
+    // ESPACE RESPONSABLE
+    // ─────────────────────────────────────────────────────────
+    Route::middleware('role:admin,responsable')->prefix('responsable')->group(function () {
+
+        // 1. Tableau de bord
+        Route::get('/dashboard', [ResponsableController::class, 'dashboard']);
+
+        // 2. Consulter la liste des chantiers
+        Route::get('/chantiers',            [ResponsableController::class, 'chantiers']);
+        Route::get('/chantiers/{chantier}', [ResponsableController::class, 'chantierShow']);
+
+        // 3. Créer un projet (dans un chantier)
+        Route::post('/chantiers/{chantier}/projets', [ResponsableController::class, 'storeProjet']);
+
+        // Projets du responsable
+        Route::get('/projets',           [ResponsableController::class, 'projets']);
+        Route::get('/projets/{projet}',  [ResponsableController::class, 'projetShow']);
+
+        // 4. Planifier des phases (extend de "Créer un projet")
+        Route::post('/projets/{projet}/phases', [ResponsableController::class, 'storePhase']);
+        Route::put('/phases/{phase}',           [ResponsableController::class, 'updatePhase']);
+        Route::delete('/phases/{phase}',        [ResponsableController::class, 'destroyPhase']);
+
+        // 5. Mettre à jour l'avancement d'une phase
+        Route::patch('/phases/{phase}/avancement', [ResponsableController::class, 'updateAvancement']);
+
+        // 6. Visualiser le planning
+        Route::get('/planning', [ResponsableController::class, 'planning']);
+
+        // 7. Visualiser la consommation d'un projet
+        Route::get('/projets/{projet}/consommation', [ResponsableController::class, 'consommation']);
     });
 
     Route::middleware('role:admin,magasinier')->prefix('magasinier')->group(function () {

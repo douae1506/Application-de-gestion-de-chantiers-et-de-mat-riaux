@@ -1,8 +1,3 @@
-Voici une version entièrement retravaillée basée sur l'inspiration visuelle.
-
-Le design supprime complètement les nuances de gris pour adopter un style **lumineux, moderne et épuré**, utilisant exclusivement des fonds **blancs**, des touches **bleu ciel / cyan doux** pour les interactions, et des textes contrastés bleu nuit (Slate) pour garantir une parfaite lisibilité professionnelle.
-
-```vue
 <template>
   <div class="admin-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
 
@@ -49,7 +44,6 @@ Le design supprime complètement les nuances de gris pour adopter un style **lum
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
           </div>
           <span>Utilisateurs</span>
-         
         </RouterLink>
 
         <p class="nav-section-label">CHANTIERS</p>
@@ -77,15 +71,15 @@ Le design supprime complètement les nuances de gris pour adopter un style **lum
 
         <p class="nav-section-label">STOCK</p>
         <RouterLink to="/admin/fournisseurs" class="nav-item" active-class="active">
-  <div class="nav-icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
-    </svg>
-  </div>
-  <span>Fournisseurs</span>
-</RouterLink>
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+          </div>
+          <span>Fournisseurs</span>
+        </RouterLink>
 
         <RouterLink to="/admin/produits" class="nav-item" active-class="active">
           <div class="nav-icon">
@@ -110,11 +104,17 @@ Le design supprime complètement les nuances de gris pour adopter un style **lum
 
         <p class="nav-section-label">RAPPORTS</p>
 
-        <RouterLink to="/admin/rapports" class="nav-item" active-class="active">
+        
+
+        <!-- ✅ NOUVEAU : Lien Historique -->
+        <RouterLink to="/admin/historique" class="nav-item" active-class="active">
           <div class="nav-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
           </div>
-          <span>Rapports</span>
+          <span>Historique</span>
         </RouterLink>
 
       </nav>
@@ -184,15 +184,16 @@ const initials = computed(() => {
 })
 
 const pageTitles = {
-  '/admin/dashboard':    'Tableau de bord',
-  '/admin/utilisateurs': 'Utilisateurs',
-  '/admin/clients':      'Clients',
-  '/admin/chantiers':    'Chantiers',
-  '/admin/projets':      'Projets',
-  '/admin/produits':    'Catalogue Produits',
-  '/admin/stocks':      'Gestion des Stocks',
-  '/admin/mouvements':  'Entrées / Sorties / Transferts',
-  '/admin/rapports':    'Rapports',
+  '/admin/dashboard':      'Tableau de bord',
+  '/admin/utilisateurs':   'Utilisateurs',
+  '/admin/clients':        'Clients',
+  '/admin/chantiers':      'Chantiers',
+  '/admin/projets':        'Projets',
+  '/admin/produits':       'Catalogue Produits',
+  '/admin/stocks':         'Gestion des Stocks',
+  '/admin/mouvements':     'Entrées / Sorties / Transferts',
+  '/admin/rapports':       'Rapports',
+  '/admin/historique':     'Historique des actions', // ✅ nouveau
 }
 const pageTitle = computed(() => pageTitles[route.path] ?? 'Administration')
 
@@ -539,5 +540,3 @@ async function handleLogout() {
   transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1); 
 }
 </style>
-
-```

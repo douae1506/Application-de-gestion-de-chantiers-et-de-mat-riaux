@@ -25,95 +25,81 @@ class Activity extends Model
         'properties' => 'array',
     ];
 
+    // Relations
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Libellé lisible de l'action (created, updated, deleted, ...)
-     */
-    public function getActionLabelAttribute(): string
+    // Accesseurs
+    public function getActionLabelAttribute()
     {
-        return match ($this->action) {
-            'created'        => 'Création',
-            'updated'        => 'Modification',
-            'deleted'        => 'Suppression',
+        return [
+            'created' => 'Création',
+            'updated' => 'Modification',
+            'deleted' => 'Suppression',
             'status_changed' => 'Changement de statut',
-            'login'          => 'Connexion',
-            'logout'         => 'Déconnexion',
-            default          => ucfirst($this->action),
-        };
+            'restored' => 'Restauration',
+            'assigned' => 'Affectation',
+            'completed' => 'Finalisation',
+            'archived' => 'Archivage',
+        ][$this->action] ?? $this->action;
     }
 
-    /**
-     * Libellé lisible du rôle utilisateur
-     */
-    public function getUserRoleLabelAttribute(): string
+    public function getSubjectTypeLabelAttribute()
     {
-        return match ($this->user_role) {
-            'admin'       => 'Administrateur',
-            'responsable' => 'Responsable',
-            'chef_projet' => 'Chef de projet',
-            'magasinier'  => 'Magasinier',
-            default       => $this->user_role ? ucfirst($this->user_role) : '—',
-        };
-    }
-
-    /**
-     * Nom "humain" du type de modèle concerné (Chantier, Projet, ...)
-     */
-    public function getSubjectTypeLabelAttribute(): string
-    {
-        $labels = [
-            'Chantier'       => 'Chantier',
-            'Projet'         => 'Projet',
-            'Client'         => 'Client',
-            'User'           => 'Utilisateur',
-            'Fournisseur'    => 'Fournisseur',
-            'Produit'        => 'Produit',
-            'Stock'          => 'Dépôt',
-            'EntreeStock'    => 'Entrée de stock',
-            'SortieStock'    => 'Sortie de stock',
-            'Transfert'      => 'Transfert de stock',
-            'Document'       => 'Document',
-            'ProjectExpense' => 'Dépense',
-            'Phase'          => 'Phase',
-            'Event'          => 'Événement',
+        $map = [
+            'Chantier' => 'Chantier',
+            'Projet' => 'Projet',
+            'Phase' => 'Phase',
+            'User' => 'Utilisateur',
+            'Client' => 'Client',
+            'Produit' => 'Produit',
+            'Stock' => 'Stock',
+            'Document' => 'Document',
+            'Event' => 'Événement',
         ];
-
-        $short = class_basename($this->subject_type);
-
-        return $labels[$short] ?? $short;
+        return $map[$this->subject_type] ?? $this->subject_type;
     }
 
-    /**
-     * Enregistre une nouvelle entrée d'historique.
-     */
-    public static function log(string $action, $subject, string $description, ?array $properties = null): self
+    public function getIconAttribute()
     {
-        $user = auth()->user();
-
-        return self::create([
-            'user_id'       => $user?->id,
-            'user_nom'      => $user ? trim($user->prenom . ' ' . $user->nom) : 'Système',
-            'user_role'     => $user?->role,
-            'action'        => $action,
-            'subject_type'  => is_object($subject) ? get_class($subject) : (string) $subject,
-            'subject_id'    => is_object($subject) ? $subject->getKey() : null,
-            'subject_label' => is_object($subject) ? self::guessLabel($subject) : null,
-            'description'   => $description,
-            'properties'    => $properties,
-        ]);
+        $icons = [
+            'created' => '➕',
+            'updated' => '✏️',
+            'deleted' => '🗑️',
+            'status_changed' => '🔄',
+            'restored' => '♻️',
+            'assigned' => '👤',
+            'completed' => '✅',
+            'archived' => '📦',
+        ];
+        return $icons[$this->action] ?? '📋';
     }
 
-    private static function guessLabel($model): ?string
+    public function getColorAttribute()
     {
-        foreach (['nom', 'reference', 'titre', 'email'] as $field) {
-            if (isset($model->{$field})) {
-                return (string) $model->{$field};
-            }
-        }
-        return null;
+        $colors = [
+            'created' => 'green',
+            'updated' => 'blue',
+            'deleted' => 'red',
+            'status_changed' => 'orange',
+            'restored' => 'teal',
+            'assigned' => 'purple',
+            'completed' => 'indigo',
+            'archived' => 'gray',
+        ];
+        return $colors[$this->action] ?? 'gray';
+    }
+
+    // Scopes
+    public function scopeForSubject($query, $type, $id)
+    {
+        return $query->where('subject_type', $type)->where('subject_id', $id);
+    }
+
+    public function scopeRecent($query, $limit = 50)
+    {
+        return $query->orderBy('created_at', 'desc')->limit($limit);
     }
 }

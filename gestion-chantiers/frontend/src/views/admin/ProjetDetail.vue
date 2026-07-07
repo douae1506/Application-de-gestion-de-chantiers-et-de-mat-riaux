@@ -416,6 +416,17 @@ const phaseForm = reactive({
   observations: '',
 })
 
+function toDateInputString(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  // Vérifier que la date est valide
+  if (isNaN(d.getTime())) return ''
+  // Extraire année, mois, jour en local (ne pas utiliser toISOString car il donne UTC)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 // ─── Méthodes pour les phases ─────────────────────────────
 function openAddPhase() {
   editingPhaseId.value = null
@@ -437,12 +448,13 @@ function openAddPhase() {
 }
 
 function openEditPhase(phase) {
-  editingPhaseId.value = phase.id
+   editingPhaseId.value = phase.id
   Object.assign(phaseForm, {
     ...phase,
-    date_debut: phase.date_debut || '',
-    date_fin_prevue: phase.date_fin_prevue || '',
-    date_fin_reelle: phase.date_fin_reelle || '',
+    // Convertir les dates pour les champs input[type="date"]
+    date_debut: toDateInputString(phase.date_debut),
+    date_fin_prevue: toDateInputString(phase.date_fin_prevue),
+    date_fin_reelle: toDateInputString(phase.date_fin_reelle),
   })
   showPhaseModal.value = true
 }
@@ -454,11 +466,27 @@ async function savePhase() {
   }
   phaseLoading.value = true
   try {
-    const payload = { ...phaseForm }
-    delete payload.id
-    if (!payload.date_fin_prevue) delete payload.date_fin_prevue
-    if (!payload.date_fin_reelle) delete payload.date_fin_reelle
-    if (!payload.responsable) delete payload.responsable
+    // Construire le payload proprement
+    const payload = {
+      nom: phaseForm.nom,
+      description: phaseForm.description || null,
+      ordre: phaseForm.ordre || 1,
+      date_debut: phaseForm.date_debut, // déjà en YYYY-MM-DD
+      date_fin_prevue: phaseForm.date_fin_prevue || null,
+      date_fin_reelle: phaseForm.date_fin_reelle || null,
+      progression: phaseForm.progression || 0,
+      responsable: phaseForm.responsable || null,
+      statut: phaseForm.statut || 'non_commencee',
+      validation: phaseForm.validation || false,
+      observations: phaseForm.observations || null,
+    }
+
+    // Vérification supplémentaire : si date_fin_prevue est avant date_debut
+    if (payload.date_fin_prevue && payload.date_fin_prevue < payload.date_debut) {
+      alert('La date de fin prévue ne peut pas être antérieure à la date de début.')
+      phaseLoading.value = false
+      return
+    }
 
     let response
     if (editingPhaseId.value) {
@@ -474,8 +502,14 @@ async function savePhase() {
     }
     showPhaseModal.value = false
   } catch (e) {
-    alert('Erreur lors de la sauvegarde de la phase')
-    console.error(e)
+    console.error('Erreur savePhase', e.response?.data)
+    // Afficher les erreurs de validation proprement
+    if (e.response?.data?.errors) {
+      const errors = Object.values(e.response.data.errors).flat().join('\n')
+      alert('Erreurs de validation :\n' + errors)
+    } else {
+      alert(e.response?.data?.message || 'Erreur lors de la sauvegarde de la phase')
+    }
   } finally {
     phaseLoading.value = false
   }
@@ -579,7 +613,7 @@ onMounted(() => { fetchProject() })
   background: #f6f9fc;
   min-height: 100vh;
   padding: 2rem 2.5rem;
-  margin: 0 auto;
+  margin: -48px;
   color: #1e293b;
   line-height: 1.5;
   margin:-30px;

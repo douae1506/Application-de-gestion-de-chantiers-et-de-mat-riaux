@@ -304,7 +304,7 @@ onMounted(() => {
 <style scoped>
 /* ── Page layout ──────────────────────────────── */
 .projects-page {
-  margin: -30px;
+  margin: -42px;
   padding: 40px 24px;
   background-color: #f8fafc;
   min-height: 100vh;

@@ -25,11 +25,21 @@ import StocksView from '@/views/admin/StocksView.vue'
 import MouvementsView from '@/views/admin/MouvementsView.vue'
 import RapportsView from '@/views/admin/RapportsView.vue'
 import FournisseursView from '@/views/admin/FournisseursView.vue'
+import HistoriqueView from '@/views/admin/HistoriqueView.vue'
 
 // Pages pour les rôles (si vous les avez)
 import ChefProjetDashboard from '@/views/chef-projet/DashboardView.vue'
-import ResponsableDashboard from '@/views/responsable/DashboardView.vue'
 import MagasinierDashboard from '@/views/magasinier/DashboardView.vue'
+
+// Zone responsable
+import ResponsableLayout from '@/layouts/ResponsableLayout.vue'
+import ResponsableDashboard from '@/views/responsable/DashboardView.vue'
+import ResponsableChantiersView from '@/views/responsable/ChantiersView.vue'
+import ResponsableChantierDetailView from '@/views/responsable/ChantierDetailView.vue'
+import ResponsableProjetsView from '@/views/responsable/ProjetsView.vue'
+import ResponsableProjetDetailView from '@/views/responsable/ProjetDetailView.vue'
+import ResponsablePlanningView from '@/views/responsable/PlanningView.vue'
+import ResponsableConsommationView from '@/views/responsable/ConsommationView.vue'
 
 const routes = [
   // Routes publiques (guest)
@@ -79,7 +89,7 @@ const routes = [
       { path: 'users/:id', name: 'user-profile', component: () => import('@/views/admin/UserProfile.vue') },
       { path: 'clients/:id', name: 'client-profile', component: () => import('@/views/admin/ClientProfile.vue') },
       { path: 'fournisseurs', name: 'AdminFournisseurs', component: FournisseursView },
-       
+      { path: '/admin/historique', name: 'historique', component: HistoriqueView, meta: { requiresAuth: true } },
     ]
   },
 
@@ -95,9 +105,17 @@ const routes = [
   // Zone responsable
   {
     path: '/responsable',
+    component: ResponsableLayout,
     meta: { requiresAuth: true, role: 'responsable' },
     children: [
+      { path: '', redirect: 'dashboard' },
       { path: 'dashboard', name: 'ResponsableDashboard', component: ResponsableDashboard },
+      { path: 'chantiers', name: 'ResponsableChantiers', component: ResponsableChantiersView },
+      { path: 'chantiers/:id', name: 'responsable-chantier-detail', component: ResponsableChantierDetailView, props: true },
+      { path: 'projets', name: 'ResponsableProjets', component: ResponsableProjetsView },
+      { path: 'projets/:id', name: 'responsable-projet-detail', component: ResponsableProjetDetailView, props: true },
+      { path: 'projets/:id/consommation', name: 'responsable-consommation', component: ResponsableConsommationView, props: true },
+      { path: 'planning', name: 'ResponsablePlanning', component: ResponsablePlanningView },
     ]
   },
 

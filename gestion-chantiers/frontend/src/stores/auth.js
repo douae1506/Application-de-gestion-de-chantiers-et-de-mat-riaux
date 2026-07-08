@@ -15,6 +15,18 @@ export const useAuthStore = defineStore('auth', () => {
   const isResponsable   = computed(() => role.value === 'responsable')
   const isChefProjet    = computed(() => role.value === 'chef_projet')
   const isMagasinier    = computed(() => role.value === 'magasinier')
+  const permissions     = computed(() => user.value?.permissions ?? [])
+
+  function hasPermission(permission) {
+    if (!permission) return true
+    if (role.value === 'admin') return true
+    return permissions.value.includes(permission)
+  }
+
+  function hasAnyPermission(perms = []) {
+    if (!perms.length) return true
+    return perms.some((p) => hasPermission(p))
+  }
 
   // --- Helpers ---
   function authHeaders() {
@@ -88,14 +100,25 @@ export const useAuthStore = defineStore('auth', () => {
     return data.user
   }
 
-  // Route de redirection selon le rôle
+  // Route de redirection selon le rôle.
+  // IMPORTANT : ne fait jamais confiance aveuglément à user.redirect_to
+  // (peut être une valeur mise en cache avant une mise à jour des droits).
+  // On revalide côté client avec les permissions actuelles ; si elles sont
+  // absentes/invalides, on nettoie la session pour éviter toute boucle de
+  // redirection infinie entre /login et /admin/dashboard.
   function dashboardRoute() {
-    return user.value?.redirect_to ?? '/'
+    if (!isAuthenticated.value || !user.value) return '/login'
+    if (hasPermission('view_dashboard')) return '/admin/dashboard'
+    // Session authentifiée mais sans permission connue (cache obsolète,
+    // rôle invalide, etc.) : on force une reconnexion propre.
+    clear()
+    return '/login'
   }
 
   return {
     user, token,
     isAuthenticated, role, isAdmin, isResponsable, isChefProjet, isMagasinier,
+    permissions, hasPermission, hasAnyPermission,
     register, login, logout, fetchMe, dashboardRoute,
   }
 })

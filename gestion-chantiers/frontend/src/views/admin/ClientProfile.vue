@@ -194,12 +194,12 @@ onMounted(loadClient)
                     <table class="modern-table">
                         <thead>
                             <tr>
-                                <th>Référence</th>
-                                <th>Intitulé du Projet</th>
-                                <th>Ville</th>
-                                <th>État</th>
-                                <th class="align-right">Budget</th>
-                                <th class="align-right">Avancement</th>
+                                <th style="width:15%">Référence</th>
+                                <th style="width:25%">Intitulé du Projet</th>
+                                <th style="width:12%">Ville</th>
+                                <th style="width:5%">État</th>
+                                <th style="width:18%" class="align-right">Budget</th>
+                                <th style="width:15%" class="align-right">Avancement</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -431,41 +431,81 @@ onMounted(loadClient)
 .link-style:hover { text-decoration: underline; }
 
 /* --- TABLEAU DES CHANTIERS REVISITÉ (PLEINE LARGEUR) --- */
-.scrollable-table { overflow-x: auto; }
+.scrollable-table {
+     overflow-x: auto;
+     padding: 0 4px;
+ }
 .modern-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 13.5px;
+    min-width: 700px;
 }
 .modern-table th {
     background: #f8fafc;
     color: #64748b;
     font-weight: 600;
-    padding: 14px 24px; /* Un peu plus d'aération verticale */
-    border-bottom: 1px solid #edf2f7;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 14px 16px;
+    border-bottom: 2px solid #e9edf4;
     text-align: left;
+    white-space: nowrap;
 }
+.modern-table th.align-right {
+  text-align: right;
+}
+
 .modern-table td {
-    padding: 16px 24px;
-    border-bottom: 1px solid #f1f5f9;
-    color: #475569;
+    padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+  line-height: 1.4;
 }
-.modern-table tr:last-child td { border: none; }
+.modern-table td.align-right {
+  text-align: right;
+}
+
+.modern-table tr:last-child td {  border-bottom: none; }
 .modern-table tr:hover { background-color: #f8fafc; }
 
-.ref-code { font-family: monospace; color: #64748b; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+.ref-code { 
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    font-weight: 500;    }
 .align-right { text-align: right; }
-
+.text-nowrap {
+  white-space: nowrap;
+}
 /* BARRE DE PROGRESSION CIEL */
 .progress-wrapper {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 12px;
 }
-.progress-val { font-size: 12.5px; font-weight: 600; color: #334155; }
-.track-bar { width: 100px; height: 5px; background: #e2e8f0; border-radius: 10px; overflow: hidden; } /* Un peu plus large puisque la table a de l'espace */
-.fill-bar { height: 100%; background: #0ea5e9; border-radius: 10px; }
+.progress-val { font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  min-width: 38px;
+  text-align: right;}
+.track-bar { width: 100px;
+  height: 6px;
+  background: #e9edf4;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0; }
+.fill-bar {  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+  border-radius: 8px;
+  transition: width 0.4s ease;}
 
 /* --- BLOC NOTES --- */
 .clean-notebook {
@@ -494,10 +534,13 @@ onMounted(loadClient)
 
 /* --- BADGES --- */
 .status-pill {
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
+    display: inline-block;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
 }
 .badge-default { background: #f1f5f9; color: #475569; }
 .badge-vip { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
@@ -506,7 +549,13 @@ onMounted(loadClient)
 .badge-en_cours { background: #f0f9ff; color: #0369a1; }
 .badge-termine { background: #f0fdf4; color: #15803d; }
 
-.empty-state-fallback { padding: 32px; text-align: center; color: #94a3b8; font-style: italic; }
+.empty-state-fallback { 
+    padding: 40px 24px;
+    text-align: center;
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 14px; 
+}
 
 /* --- RESPONSIVE DESIGN --- */
 @media (max-width: 1150px) {

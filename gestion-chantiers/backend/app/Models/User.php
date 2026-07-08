@@ -21,6 +21,7 @@ class User extends Authenticatable
         'password',
         'role',
         'est_actif',
+        'derniere_connexion_at',
     ];
 
     protected $hidden = [
@@ -34,8 +35,6 @@ class User extends Authenticatable
         'est_actif' => 'boolean',
         'password' => 'hashed',
     ];
-
-    // --- Helpers de rôle ---
 
     public function isAdmin(): bool
     {
@@ -58,11 +57,39 @@ class User extends Authenticatable
     }
 
     public function isResponsable(): bool
-{
-    return $this->role === 'responsable';
-}
-public function documents()
-{
-    return $this->hasMany(Document::class, 'uploaded_by');
-}
+    {
+        return $this->role === 'responsable';
+    }
+    
+    public function documents()
+    {
+        return $this->hasMany(Document::class, 'uploaded_by');
+    }
+
+    public function permissions(): array
+    {
+        $map = config('permissions.roles', []);
+        $rolePerms = $map[$this->role] ?? [];
+
+        if ($rolePerms === '*') {
+            return config('permissions.all', []);
+        }
+
+        return $rolePerms;
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->role === 'admin') {
+            return true;
+        }
+
+        return in_array($permission, $this->permissions(), true);
+    }
+
+    public function updateLastLogin(): void
+    {
+        $this->derniere_connexion_at = now();
+        $this->save();
+    }
 }

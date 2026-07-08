@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Alias du middleware de rôle
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
+            'permission' => \App\Http\Middleware\CheckPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -7,7 +7,7 @@
         <p>Gérez vos dépôts et visualisez le stock par emplacement</p>
       </div>
       <button class="btn btn-primary" @click="openCreateDepot">
-        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         Nouveau dépôt
       </button>
     </div>
@@ -70,11 +70,12 @@
           </div>
           <div class="depot-actions" @click.stop>
             <button class="btn btn-sm btn-outline" @click="voirDepot(s)">Voir le stock</button>
-            <button class="btn btn-sm btn-secondary icon-btn" @click="openEditDepot(s)" title="Modifier">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <!-- Nouveaux boutons d'action style modernisé -->
+            <button class="btn-action edit" @click="openEditDepot(s)" title="Modifier">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
             </button>
-            <button class="btn btn-sm btn-danger icon-btn" @click="supprimerDepot(s.id)" title="Supprimer">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            <button class="btn-action delete" @click="supprimerDepot(s.id)" title="Supprimer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             </button>
           </div>
         </div>
@@ -128,8 +129,13 @@
                 <td><span class="badge-cat">{{ p.categorie }}</span></td>
                 <td v-for="s in stocks" :key="s.id">
                   <div class="qty-cell">
-                    <span :class="getQteForDepot(p, s.id) <= 0 ? 'text-muted' : ''">
-                      {{ getQteForDepot(p, s.id) }} {{ p.unite }}
+                    <span
+                      :class="{
+                        'text-red': getQteForDepot(p, s.id) <= (getStockMinForDepot(p, s.id) || 0),
+                        'text-muted': getQteForDepot(p, s.id) <= 0
+                      }"
+                    >
+                      <strong>{{ getQteForDepot(p, s.id) }}</strong> {{ p.unite }}
                     </span>
                   </div>
                 </td>
@@ -184,9 +190,18 @@
                 <tr v-for="p in depotDetail.produits" :key="p.id" :class="{ 'row-alerte': p.alerte }">
                   <td><strong>{{ p.nom }}</strong><br><span class="sub">{{ p.categorie }}</span></td>
                   <td>
-                    <span :class="p.alerte ? 'text-red' : ''"><strong>{{ p.quantite }}</strong> {{ p.unite }}</span>
-                    <span v-if="p.alerte" class="badge-alerte" title="Alerte stock minimum">
-                      <svg class="inline-icon stroke-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <strong :class="{ 'text-red': p.alerte }">
+                      {{ p.quantite }}
+                    </strong>
+                    <span :class="{ 'text-red': p.alerte }">
+                      {{ p.unite }}
+                    </span>
+                    <span v-if="p.alerte" class="badge-alerte">
+                      <svg class="inline-icon stroke-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                      </svg>
                     </span>
                   </td>
                   <td class="text-muted">{{ p.stock_minimum }}</td>
@@ -340,6 +355,11 @@ function getQteForDepot(produit, stockId) {
   return s?.quantite ?? 0
 }
 
+function getStockMinForDepot(produit, stockId) {
+  const depot = produit.depots?.find(d => d.id === stockId)
+  return depot?.stock_minimum ?? 0
+}
+
 function openMinModal() {
   minError.value = ''
   selectedProductId.value = null
@@ -447,7 +467,7 @@ onMounted(async () => { await fetchStocks(); await fetchProduits() })
 .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
 .tab:hover:not(.active) { color: #334155; }
 
-.depots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+.depots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
 .depot-card { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; padding: 1.25rem; cursor: pointer; transition: all .2s; }
 .depot-card:hover { border-color: #2563eb; box-shadow: 0 4px 16px rgba(37,99,235,.1); transform: translateY(-1px); }
 .depot-top { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; }
@@ -470,7 +490,15 @@ onMounted(async () => { await fetchStocks(); await fetchProduits() })
 .depot-stats { display: flex; gap: 1.5rem; margin-bottom: 1rem; padding: .75rem; background: #f8fafc; border-radius: 8px; }
 .depot-stat span { display: block; font-size: 1.2rem; font-weight: 800; color: #0f172a; }
 .depot-stat label { font-size: .72rem; color: #64748b; }
-.depot-actions { display: flex; gap: .5rem; }
+
+/* Actions modernisées */
+.depot-actions { display: flex; gap: .5rem; align-items: center; }
+.depot-actions .btn-outline { flex: 1; }
+
+.btn-action { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+.btn-action:hover { background: #f8fafc; color: #0f172a; border-color: #cbd5e1; }
+.btn-action.edit:hover { color: #3b82f6; border-color: #bfdbfe; background: #eff6ff; }
+.btn-action.delete:hover { color: #f43f5e; border-color: #fecdd3; background: #fff1f2; }
 
 .filters-bar { display: flex; gap: .75rem; margin-bottom: 1.5rem; }
 .search-wrap { flex: 1; position: relative; }
@@ -485,14 +513,15 @@ onMounted(async () => { await fetchStocks(); await fetchProduits() })
 .data-table td { padding: .75rem 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
 .data-table tbody tr:hover td { background: #f8fafc; }
 .data-table tbody tr:last-child td { border-bottom: none; }
-.row-alerte td { background: #fffbeb !important; }
+.row-alerte td { background: transparent !important; }
+
 .produit-cell { display: flex; align-items: center; gap: .75rem; }
 .produit-avatar { width: 36px; height: 36px; border-radius: 8px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-weight: 700; font-size: .8rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: 0.05em; }
 .badge-cat { background: #f1f5f9; color: #475569; padding: 3px 10px; border-radius: 10px; font-size: .75rem; font-weight: 600; }
 .qty-cell { text-align: center; }
 .badge-statut { padding: 3px 10px; border-radius: 12px; font-size: .75rem; font-weight: 700; }
 .badge-statut.disponible { background: #d1fae5; color: #065f46; }
-.badge-statut.rupture { background: #fee2e2; color: #991b1b; }
+.badge-statut.rupture { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 .badge-statut.archive { background: #f1f5f9; color: #64748b; }
 .badge-alerte { display: inline-flex; align-items: center; margin-left: 0.35rem; }
 .badge-alerte svg { width: 14px; height: 14px; }
@@ -535,9 +564,6 @@ onMounted(async () => { await fetchStocks(); await fetchProduits() })
 .btn-sm { padding: .35rem .6rem; font-size: .78rem; }
 .btn:disabled { opacity: .6; cursor: not-allowed; }
 
-.icon-btn { padding: 0.35rem; display: inline-flex; align-items: center; justify-content: center; }
-.icon-btn svg { width: 14px; height: 14px; }
-
 .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.5); display: flex; align-items: center; justify-content: center; z-index: 999; }
 .modal-box { background: #fff; border-radius: 16px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; background: #fff; z-index: 1; }
@@ -555,4 +581,3 @@ onMounted(async () => { await fetchStocks(); await fetchProduits() })
 
 @media (max-width: 768px) { .stat-grid { grid-template-columns: 1fr 1fr; } .depots-grid { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; } }
 </style>
-

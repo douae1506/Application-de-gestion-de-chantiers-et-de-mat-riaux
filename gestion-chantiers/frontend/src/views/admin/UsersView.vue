@@ -92,7 +92,8 @@
               <p class="contact-line" v-if="u.telephone_mobile">📱 {{ u.telephone_mobile }}</p>
               <p class="contact-line muted" v-else>—</p>
             </td>
-            <td><span class="date-text">{{ u.derniere_connexion || 'Jamais' }}</span></td>
+            <td>
+              <span class="date-text">{{ getLastLogin(u) }}</span></td>
             <td>
               <button class="status-toggle" :class="u.est_actif ? 'active' : 'inactive'" @click.stop="toggleStatus(u)">
                 <span class="status-dot"></span>
@@ -159,7 +160,7 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════════════
-         MODAL CREATE / EDIT (réintégrée complètement)
+         MODAL CREATE / EDIT
     ══════════════════════════════════════════════════════════════ -->
     <Teleport to="body">
       <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
@@ -278,10 +279,11 @@
       </div>
 
       <!-- ══════════════════════════════════════════════════════════════
-           MODALE : VISUALISATION DU PROFIL
+           MODALE DE VISUALISATION DU PROFIL (améliorée)
       ══════════════════════════════════════════════════════════════ -->
       <div v-if="showViewModal" class="modal-overlay" @click.self="closeViewModal">
         <div class="modal profile-modal">
+          <!-- En‑tête de la modale -->
           <div class="modal-header">
             <div class="modal-title-area">
               <div class="modal-icon" style="background:linear-gradient(135deg,#0f172a,#1e293b)">
@@ -297,75 +299,78 @@
             </button>
           </div>
 
+          <!-- Corps de la modale avec le profil amélioré -->
           <div class="modal-body profile-body">
-            <div v-if="viewUser" class="crm-viewport">
-              <header class="crm-header">
-                <div class="header-identity">
-                  <div class="avatar-genius">
-                    <img v-if="viewUser.photo_profil" :src="getPhotoUrl(viewUser.photo_profil)" alt="Profil" />
-                    <span v-else>{{ initials(viewUser) }}</span>
-                  </div>
-                  <div>
-                    <div class="identity-row">
-                      <h1>{{ viewUser.prenom }} {{ viewUser.nom }}</h1>
-                      <span class="status-pill" :class="viewUser.est_actif ? 'badge-active' : 'badge-inactive'">
-                        {{ viewUser.est_actif ? 'Actif' : 'Inactif' }}
-                      </span>
-                    </div>
-                    <p class="subtitle">{{ roleLabel(viewUser.role) }}</p>
-                  </div>
-                </div>
-              </header>
+            <div v-if="viewUser" class="profile-container">
 
-              <div class="crm-layout">
-                <main class="crm-main-content">
-                  <section class="panel">
-                    <div class="panel-header"><h2>Informations du compte</h2></div>
-                    <div class="panel-body">
-                      <div class="data-grid">
-                        <div class="data-cell">
-                          <span class="label">Adresse e-mail</span>
-                          <span class="value email-link">{{ viewUser.email }}</span>
-                        </div>
-                        <div class="data-cell">
-                          <span class="label">Rôle système</span>
-                          <span class="value font-medium">{{ roleLabel(viewUser.role) }}</span>
-                        </div>
-                        <div class="data-cell">
-                          <span class="label">Téléphone Pro</span>
-                          <span class="value">{{ viewUser.telephone_pro || '—' }}</span>
-                        </div>
-                        <div class="data-cell">
-                          <span class="label">Téléphone Mobile</span>
-                          <span class="value">{{ viewUser.telephone_mobile || '—' }}</span>
-                        </div>
+              <!-- Bloc d'identité -->
+              <div class="profile-identity">
+                <div class="profile-avatar">
+                  <img v-if="viewUser.photo_profil" :src="getPhotoUrl(viewUser.photo_profil)" alt="Profil" />
+                  <span v-else>{{ initials(viewUser) }}</span>
+                </div>
+                <div class="profile-name-wrapper">
+                  <div class="profile-name-row">
+                    <h2>{{ viewUser.prenom }} {{ viewUser.nom }}</h2>
+                    <span class="status-pill" :class="viewUser.est_actif ? 'badge-active' : 'badge-inactive'">
+                      {{ viewUser.est_actif ? 'Actif' : 'Inactif' }}
+                    </span>
+                  </div>
+                  <p class="profile-role">{{ roleLabel(viewUser.role) }}</p>
+                </div>
+              </div>
+
+              <!-- Grille d'informations -->
+              <div class="profile-grid">
+                <!-- Colonne principale -->
+                <div class="profile-main">
+                  <div class="profile-section">
+                    <h3 class="section-title">Informations du compte</h3>
+                    <div class="info-grid">
+                      <div class="info-item">
+                        <span class="info-label">Adresse e‑mail</span>
+                        <span class="info-value email-link">{{ viewUser.email }}</span>
+                      </div>
+                      <div class="info-item">
+                        <span class="info-label">Rôle</span>
+                        <span class="info-value font-medium">{{ roleLabel(viewUser.role) }}</span>
+                      </div>
+                      <div class="info-item">
+                        <span class="info-label">Téléphone pro</span>
+                        <span class="info-value">{{ viewUser.telephone_pro || '—' }}</span>
+                      </div>
+                      <div class="info-item">
+                        <span class="info-label">Téléphone mobile</span>
+                        <span class="info-value">{{ viewUser.telephone_mobile || '—' }}</span>
                       </div>
                     </div>
-                  </section>
-                </main>
+                  </div>
+                </div>
 
-                <aside class="crm-sidebar">
-                  <section class="panel">
-                    <div class="panel-header"><h2>Sécurité & Activité</h2></div>
-                    <div class="panel-body timeline">
+                <!-- Colonne latérale : activité -->
+                <div class="profile-sidebar">
+                  <div class="profile-section">
+                    <h3 class="section-title">Sécurité & activité</h3>
+                    <div class="timeline">
                       <div class="timeline-item">
                         <div class="timeline-marker" :class="{ 'update-marker': viewUser.est_actif }"></div>
                         <div class="timeline-content">
-                          <span class="label">Dernière connexion</span>
-                          <span class="value font-medium">{{ formatDate(viewUser.derniere_connexion_at) }}</span>
+                          <span class="timeline-label">Dernière connexion</span>
+                          <span class="timeline-value">{{ formatDate(viewUser.derniere_connexion_at) }}</span>
                         </div>
                       </div>
                       <div class="timeline-item">
                         <div class="timeline-marker"></div>
                         <div class="timeline-content">
-                          <span class="label">Statut d'accès</span>
-                          <span class="value text-muted">{{ viewUser.est_actif ? 'Autorisé à se connecter' : 'Accès révoqué' }}</span>
+                          <span class="timeline-label">Statut d'accès</span>
+                          <span class="timeline-value">{{ viewUser.est_actif ? 'Autorisé' : 'Révoqué' }}</span>
                         </div>
                       </div>
                     </div>
-                  </section>
-                </aside>
+                  </div>
+                </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -427,7 +432,11 @@ const filteredUsers = computed(() => {
     return matchSearch && matchRole && matchStatus
   })
 })
-
+function getLastLogin(user) {
+  // Essaye plusieurs noms de champ possibles
+  const date = user.derniere_connexion_at || user.derniere_connexion || user.last_login_at || user.last_login;
+  return formatDate(date);
+}
 const totalPages    = computed(() => Math.max(1, Math.ceil(filteredUsers.value.length / perPage)))
 const paginatedUsers = computed(() => {
   const start = (currentPage.value - 1) * perPage
@@ -727,7 +736,7 @@ function handleImage(event) {
 .uc-email { font-size:.75rem;color:#8a94b2;margin:0 0 .75rem; }
 .uc-actions { display:flex;gap:.5rem;justify-content:center;margin-top:.85rem; }
 
-/* ── Modal ─────────────────────────────────────── */
+/* ── Modal communes ─────────────────────────────── */
 .modal-overlay { position:fixed;inset:0;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1rem;backdrop-filter:blur(4px); }
 .modal { background:#fff;border-radius:20px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,.25); }
 
@@ -782,380 +791,164 @@ function handleImage(event) {
 .confirm-actions { display:flex;gap:.75rem;justify-content:center; }
 .btn-delete { padding:.6rem 1.5rem;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:10px;color:#fff;font-size:.875rem;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,.3); }
 
-.preview-photo { display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:10px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc; }
-.preview-photo img { width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb; }
-.photo-info { display:flex;flex-direction:column; }
-.photo-label { font-size:12px;color:#64748b; }
-.photo-name { font-size:14px;font-weight:600;color:#1e293b; }
-
-/* ── Profil modal ─────────────────────────────── */
+/* ──── MODALE PROFIL AMÉLIORÉE ──── */
 .profile-modal {
-  max-width: 900px;
+  max-width: 820px;
   width: 95%;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 30px 60px rgba(15, 23, 42, 0.15);
 }
+
 .profile-modal .modal-body {
   padding: 0;
+  gap: 0;
 }
-.profile-modal .crm-viewport {
+
+.profile-container {
+  padding: 1.75rem 2rem 2rem;
   background: #f8fafc;
-  padding: 24px 32px;
-  border-radius: 0 0 20px 20px;
-  min-height: auto;
-}
-.profile-modal .crm-header {
-  border-bottom-color: #e2e8f0;
-  padding-bottom: 20px;
-  margin-bottom: 24px;
-}
-.profile-modal .panel {
-  box-shadow: none;
-  border-color: #e2e8f0;
-}
-.data-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:20px;
-}
-.profile-modal .crm-layout {
-    display:grid;
-    grid-template-columns:2fr 1fr;
-    gap:24px;
-}
-.header-identity{
-    display:flex;
-    align-items:center;
-    gap:20px;
-}
-.avatar-genius{
-    width:90px;
-    height:90px;
-    border-radius:50%;
-    overflow:hidden;
-    background:#6366f1;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:white;
-    font-size:30px;
-    font-weight:bold;
 }
 
-.avatar-genius img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-}
-@media (max-width: 768px) {
-  .profile-modal .crm-layout {
-    grid-template-columns: 1fr;
-  }
-  .profile-modal .crm-viewport {
-    padding: 16px;
-  }
-}
-@media (max-width: 640px) {
-  .form-row { grid-template-columns:1fr; }
-  .role-selector { flex-wrap:wrap; }
-}
-/* ==========================================================================
-   VARIABLES DE THÈME (À adapter selon votre charte)
-   ========================================================================== */
-:root {
-  --modal-bg: #ffffff;
-  --modal-overlay-bg: rgba(15, 23, 42, 0.6);
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --border-color: #f1f5f9;
-  --bg-hover: #f8fafc;
-  
-  /* Couleurs de statut */
-  --color-active: #10b981;
-  --color-active-bg: #ecfdf5;
-  --color-inactive: #ef4444;
-  --color-inactive-bg: #fef2f2;
-  
-  /* Ombres et arrondis */
-  --radius-lg: 16px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --transition-smooth: all 0.25s ease-in-out;
-}
-
-/* ==========================================================================
-   STRUCTURE DE LA MODALE & OVERLAY
-   ========================================================================== */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: var(--modal-overlay-bg);
-  backdrop-filter: blur(4px); /* Effet flouté premium */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 1rem;
-}
-
-.modal.profile-modal {
-  background: var(--modal-bg);
-  width: 100%;
-  max-width: 850px;
-  max-height: 90vh;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: modalFadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes modalFadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* ==========================================================================
-   HEADER DE LA MODALE
-   ========================================================================== */
-.modal-header {
-  padding: 1.25rem 1.75rem;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: var(--modal-bg);
-}
-
-.modal-title-area {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.modal-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-}
-
-.modal-icon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.modal-title-area h2 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--text-main);
-  margin: 0;
-}
-
-.modal-title-area p {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin: 0.15rem 0 0 0;
-}
-
-.modal-close {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition-smooth);
-}
-
-.modal-close:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-main);
-}
-
-.modal-close svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* ==========================================================================
-   CORPS DE LA MODALE & LAYOUT CRM
-   ========================================================================== */
-.modal-body.profile-body {
-  padding: 0;
-  overflow-y: auto;
-  flex: 1;
-  background-color: #fdfdfd;
-}
-
-.crm-viewport {
-  display: flex;
-  flex-direction: column;
-}
-
-/* En-tête d'identité interne */
-.crm-header {
-  padding: 2rem 1.75rem;
-  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.header-identity {
+/* Identité */
+.profile-identity {
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eef2f6;
+  margin-bottom: 1.75rem;
 }
 
-.avatar-genius {
-  width: 72px;
-  height: 72px;
+.profile-avatar {
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  background: #e2e8f0;
-  color: #475569;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: #fff;
+  font-size: 28px;
   font-weight: 600;
-  font-size: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 3px solid #ffffff;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
 }
 
-.avatar-genius img {
+.profile-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.identity-row {
+.profile-name-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.profile-name-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   flex-wrap: wrap;
 }
 
-.identity-row h1 {
+.profile-name-row h2 {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-main);
+  color: #0f172a;
   margin: 0;
 }
 
-.crm-header .subtitle {
+.profile-role {
   font-size: 0.95rem;
-  color: var(--text-muted);
-  margin: 0.25rem 0 0 0;
+  color: #64748b;
   font-weight: 500;
+  margin: 0;
 }
 
-/* Badges de Statut */
+/* Badges de statut */
 .status-pill {
-  padding: 0.25rem 0.75rem;
+  display: inline-block;
+  padding: 0.2rem 0.8rem;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .badge-active {
-  background-color: var(--color-active-bg);
-  color: var(--color-active);
+  background: #ecfdf5;
+  color: #065f46;
 }
-
 .badge-inactive {
-  background-color: var(--color-inactive-bg);
-  color: var(--color-inactive);
+  background: #fef2f2;
+  color: #991b1b;
 }
 
-/* Layout bi-colonne (Main + Sidebar) */
-.crm-layout {
+/* Grille profil */
+.profile-grid {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
   gap: 1.5rem;
-  padding: 1.75rem;
 }
 
-@media (max-width: 768px) {
-  .crm-layout {
+@media (max-width: 700px) {
+  .profile-grid {
     grid-template-columns: 1fr;
   }
 }
 
-/* Panels */
-.panel {
+.profile-section {
   background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid #eef2f6;
+  padding: 1.25rem 1.5rem 1.5rem;
 }
 
-.panel-header {
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border-color);
-  background-color: #ffffff;
-}
-
-.panel-header h2 {
-  font-size: 0.95rem;
+.section-title {
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #334155;
-  margin: 0;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 1.25rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.panel-body {
-  padding: 1.25rem;
-}
-
-/* ==========================================================================
-   GRILLE DE DONNÉES (Informations du compte)
-   ========================================================================== */
-.data-grid {
+.info-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 1.25rem;
 }
 
 @media (max-width: 480px) {
-  .data-grid {
+  .info-grid {
     grid-template-columns: 1fr;
   }
 }
 
-.data-cell {
+.info-item {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
-.label {
-  font-size: 0.75rem;
+.info-label {
+  font-size: 0.7rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.value {
+.info-value {
   font-size: 0.9rem;
-  color: var(--text-main);
-  word-break: break-all;
+  color: #0f172a;
 }
 
 .font-medium {
@@ -1165,20 +958,19 @@ function handleImage(event) {
 .email-link {
   color: #2563eb;
   font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.email-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
 }
 
-.text-muted {
-  color: var(--text-muted);
-}
-
-/* ==========================================================================
-   TIMELINE (Sécurité & Activité)
-   ========================================================================== */
+/* Timeline */
 .timeline {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  position: relative;
+  gap: 1.25rem;
 }
 
 .timeline-item {
@@ -1187,38 +979,64 @@ function handleImage(event) {
   position: relative;
 }
 
-/* Ligne verticale reliant les éléments */
 .timeline-item:not(:last-child)::after {
   content: '';
   position: absolute;
   left: 5px;
   top: 14px;
-  bottom: -22px;
+  bottom: -10px;
   width: 2px;
-  background-color: var(--border-color);
+  background-color: #eef2f6;
 }
 
 .timeline-marker {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background-color: #cbd5e1;
-  margin-top: 4px;
+  background: #d1d5db;
+  margin-top: 2px;
   flex-shrink: 0;
-  z-index: 1;
-  border: 2px solid #ffffff;
-  box-shadow: 0 0 0 1px #cbd5e1;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #d1d5db;
 }
 
-/* Marqueur spécial si l'utilisateur est actif */
 .timeline-marker.update-marker {
-  background-color: var(--color-active);
-  box-shadow: 0 0 0 1px var(--color-active);
+  background: #059669;
+  box-shadow: 0 0 0 1px #059669;
 }
 
 .timeline-content {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.1rem;
+}
+
+.timeline-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.timeline-value {
+  font-size: 0.9rem;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+/* Responsive fine */
+@media (max-width: 640px) {
+  .form-row { grid-template-columns:1fr; }
+  .role-selector { flex-wrap:wrap; }
+  .profile-identity {
+    flex-direction: column;
+    text-align: center;
+  }
+  .profile-name-row {
+    justify-content: center;
+  }
+  .profile-modal { max-width: 100%; border-radius: 16px; }
+  .profile-container { padding: 1rem; }
 }
 </style>

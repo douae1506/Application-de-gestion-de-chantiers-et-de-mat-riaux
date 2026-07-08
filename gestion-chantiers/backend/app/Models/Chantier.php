@@ -51,11 +51,6 @@ class Chantier extends Model
         return $this->belongsTo(Client::class);
     }
 
-    public function responsable()
-    {
-        return $this->belongsTo(User::class, 'responsable_id');
-    }
-
     // Un chantier possède plusieurs projets
     public function projets()
     {

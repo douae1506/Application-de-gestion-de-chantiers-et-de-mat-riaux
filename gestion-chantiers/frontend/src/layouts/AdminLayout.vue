@@ -2,7 +2,7 @@
   <div class="admin-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
 
     <!-- ══════════════════════════════════════════
-         SIDEBAR (Lumineuse & Pure)
+         SIDEBAR (Sticky + défilement interne)
     ══════════════════════════════════════════ -->
     <aside class="sidebar" :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileOpen }">
 
@@ -24,22 +24,22 @@
         <div class="user-avatar">{{ initials }}</div>
         <div class="user-info">
           <p class="user-name">{{ auth.user?.nom_complet || 'Utilisateur' }}</p>
-          <span class="user-badge">Administrateur</span>
+          <span class="user-badge">{{ roleLabel }}</span>
         </div>
       </div>
 
-      <!-- Navigation -->
+      <!-- Navigation (défilement interne) -->
       <nav class="sidebar-nav">
         <p class="nav-section-label">PRINCIPAL</p>
 
-        <RouterLink to="/admin/dashboard" class="nav-item" active-class="active">
+        <RouterLink v-if="auth.hasPermission('view_dashboard')" to="/admin/dashboard" class="nav-item" active-class="active">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           </div>
           <span>Tableau de bord</span>
         </RouterLink>
 
-        <RouterLink to="/admin/utilisateurs" class="nav-item" active-class="active">
+        <RouterLink v-if="auth.hasPermission('view_users')" to="/admin/utilisateurs" class="nav-item" active-class="active">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
           </div>
@@ -48,21 +48,21 @@
 
         <p class="nav-section-label">CHANTIERS</p>
 
-        <RouterLink to="/admin/clients" class="nav-item" active-class="active">
+        <RouterLink v-if="auth.hasPermission('view_clients')" to="/admin/clients" class="nav-item" active-class="active">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
           </div>
           <span>Clients</span>
         </RouterLink>
 
-        <RouterLink to="/admin/chantiers" class="nav-item" active-class="active">
+        <RouterLink v-if="auth.hasPermission('view_chantiers')" to="/admin/chantiers" class="nav-item" active-class="active">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M9 21V11h6v10"/></svg>
           </div>
           <span>Chantiers</span>
         </RouterLink>
 
-        <RouterLink to="/admin/projets" class="nav-item" active-class="active">
+        <RouterLink v-if="auth.hasPermission('view_projets')" to="/admin/projets" class="nav-item" active-class="active">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
           </div>
@@ -70,7 +70,7 @@
         </RouterLink>
 
         <p class="nav-section-label">STOCK</p>
-        <RouterLink to="/admin/fournisseurs" class="nav-item" active-class="active">
+        <RouterLink v-if="auth.hasPermission('view_fournisseurs')" to="/admin/fournisseurs" class="nav-item" active-class="active">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
@@ -81,21 +81,21 @@
           <span>Fournisseurs</span>
         </RouterLink>
 
-        <RouterLink to="/admin/produits" class="nav-item" active-class="active">
+        <RouterLink v-if="auth.hasPermission('view_produits')" to="/admin/produits" class="nav-item" active-class="active">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
           </div>
           <span>Produits</span>
         </RouterLink>
 
-        <RouterLink to="/admin/stocks" class="nav-item" active-class="active">
+        <RouterLink v-if="auth.hasPermission('view_stocks')" to="/admin/stocks" class="nav-item" active-class="active">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
           </div>
           <span>Stocks</span>
         </RouterLink>
 
-        <RouterLink to="/admin/mouvements" class="nav-item" active-class="active">
+        <RouterLink v-if="auth.hasPermission('view_mouvements')" to="/admin/mouvements" class="nav-item" active-class="active">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7h12m0 0l-4-4m4 4l-4 4M4 17H16M4 17l4 4M4 17l4-4"/></svg>
           </div>
@@ -104,10 +104,7 @@
 
         <p class="nav-section-label">RAPPORTS</p>
 
-        
-
-        <!-- ✅ NOUVEAU : Lien Historique -->
-        <RouterLink to="/admin/historique" class="nav-item" active-class="active">
+        <RouterLink v-if="auth.isAdmin" to="/admin/historique" class="nav-item" active-class="active">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
@@ -193,9 +190,17 @@ const pageTitles = {
   '/admin/stocks':         'Gestion des Stocks',
   '/admin/mouvements':     'Entrées / Sorties / Transferts',
   '/admin/rapports':       'Rapports',
-  '/admin/historique':     'Historique des actions', // ✅ nouveau
+  '/admin/historique':     'Historique des actions',
 }
 const pageTitle = computed(() => pageTitles[route.path] ?? 'Administration')
+
+const roleLabels = {
+  admin: 'Administrateur',
+  responsable: 'Responsable',
+  chef_projet: 'Chef de projet',
+  magasinier: 'Magasinier',
+}
+const roleLabel = computed(() => roleLabels[auth.role] ?? 'Utilisateur')
 
 async function handleLogout() {
   await auth.logout()
@@ -205,25 +210,24 @@ async function handleLogout() {
 
 <style scoped>
 /* ══════════════════════════════════════════
-   DESIGN SYSTEM - CLAIR & BLEU PUR (SANS GRIS)
+   DESIGN SYSTEM - CLAIR & BLEU PUR
 ══════════════════════════════════════════ */
 .admin-shell {
   --sidebar-w: 260px;
   --sidebar-collapsed-w: 74px;
   --topbar-h: 64px;
   
-  /* Palette de couleurs basée sur le blanc et les nuances de bleu clair */
-  --bg-main: rgb(255, 255, 255);         /* Blanc teinté bleu très doux */
-  --bg-card: #ffffff;         /* Blanc Pur */
-  --bg-sidebar: #ffffff;      /* Blanc Pur */
+  --bg-main: rgb(255, 255, 255);
+  --bg-card: #ffffff;
+  --bg-sidebar: #ffffff;
   
-  --text-main: #0a2540;       /* Bleu nuit profond pour le texte */
-  --text-muted: #639fab;      /* Bleu azur doux (remplace le gris textuel) */
-  --text-sidebar: #0a2540;    /* Bleu nuit pour la structure menu */
+  --text-main: #0a2540;
+  --text-muted: #639fab;
+  --text-sidebar: #0a2540;
   
-  --primary-cyan: #e0f2fe;    /* Fond bleu ciel doux pour éléments actifs */
-  --primary-blue: #0284c7;    /* Bleu cyan vif pour les accents de couleur */
-  --border-color: #e0f2fe;    /* Bordures subtiles en bleu clair */
+  --primary-cyan: #e0f2fe;
+  --primary-blue: #0284c7;
+  --border-color: #e0f2fe;
 
   display: flex;
   min-height: 100vh;
@@ -234,20 +238,31 @@ async function handleLogout() {
 }
 
 /* ══════════════════════════════════════════
-   SIDEBAR (BLANCHE & BORDURES CIEL)
+   SIDEBAR - sticky en haut, hauteur pleine, défilement interne
 ══════════════════════════════════════════ */
 .sidebar {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;       /* pour que le sticky fonctionne dans flex */
   width: var(--sidebar-w);
-  min-height: 100vh;
-  background: var(--bg-sidebar);
+  height: 100vh;                /* occupe toute la hauteur de la fenêtre */
   display: flex;
   flex-direction: column;
-  position: fixed;
-  top: 0; left: 0;
-  z-index: 100;
-  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--bg-sidebar);
   border-right: 1px solid var(--border-color);
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;             /* défilement interne si le contenu dépasse */
+  overflow-x: hidden;
+}
+
+/* Personnalisation de la scrollbar (optionnel) */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
 }
 
 /* État Réduit (Collapsed) */
@@ -270,6 +285,7 @@ async function handleLogout() {
   min-height: var(--topbar-h);
   border-bottom: 1px solid var(--border-color);
   background: #f8fafc;
+  flex-shrink: 0;
 }
 .brand-logo {
   width: 34px; height: 34px;
@@ -296,6 +312,7 @@ async function handleLogout() {
   padding: 1.25rem;
   background: #f4f9fd;
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 .user-avatar {
   width: 38px; height: 38px; border-radius: 50%;
@@ -309,10 +326,12 @@ async function handleLogout() {
   font-size: 0.72rem; color: var(--primary-blue); font-weight: 500; white-space: nowrap;
 }
 
-/* Liens de Navigation */
-.sidebar-nav { flex: 1; padding: 1rem 0.75rem; overflow-y: auto; }
-.sidebar-nav::-webkit-scrollbar { width: 4px; }
-.sidebar-nav::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+/* Navigation - s'étire pour occuper l'espace entre user et footer */
+.sidebar-nav {
+  flex: 1;
+  padding: 1rem 0.75rem;
+  /* pas d'overflow ici, c'est le parent qui gère */
+}
 
 .nav-section-label {
   font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
@@ -346,8 +365,13 @@ async function handleLogout() {
 }
 .nav-item.active .nav-badge { background: var(--primary-blue); color: #fff; }
 
-/* Pied de page (Déconnexion) */
-.sidebar-footer { padding: 0.75rem; border-top: 1px solid var(--border-color); }
+/* Pied de page (Déconnexion) - toujours en bas du sidebar */
+.sidebar-footer {
+  padding: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+  background: var(--bg-sidebar); /* pour éviter la transparence lors du scroll */
+}
 .logout-btn {
   display: flex; align-items: center; gap: 0.85rem;
   width: 100%; padding: 0.7rem 0.75rem; border-radius: 8px;
@@ -359,15 +383,14 @@ async function handleLogout() {
 .logout-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
 
 /* ══════════════════════════════════════════
-   HEADER (TOPBAR EN CORRESPONDANCE BLANCHE)
+   MAIN CONTENT
 ══════════════════════════════════════════ */
 .main-area {
   flex: 1;
-  margin-left: var(--sidebar-w);
-  transition: margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
-.admin-shell.sidebar-collapsed .main-area { margin-left: var(--sidebar-collapsed-w); }
 
 .topbar {
   height: var(--topbar-h);
@@ -412,13 +435,13 @@ async function handleLogout() {
 }
 .topbar-avatar:hover { background: var(--primary-blue); color: #fff; }
 
-/* Zone de contenu globale */
 .page-content {
   padding: 2rem;
   max-width: 1600px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+  flex: 1;
 }
 
 /* Overlay Mobile */
@@ -427,25 +450,40 @@ async function handleLogout() {
 }
 
 /* ══════════════════════════════════════════
-   RESPONSIVE
+   RESPONSIVE (mobile : fixed et overlay)
 ══════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); width: var(--sidebar-w) !important; }
-  .sidebar.mobile-open { transform: translateX(0); }
-  .sidebar-overlay { display: block; }
-  .main-area, .admin-shell.sidebar-collapsed .main-area { margin-left: 0; }
-  .mobile-menu-btn { display: flex; }
-  .collapse-btn { display: none; }
+  .sidebar {
+    position: fixed;            /* on repasse en fixed pour l'overlay */
+    top: 0;
+    left: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+    width: var(--sidebar-w) !important;
+    z-index: 100;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  .sidebar-overlay {
+    display: block;
+  }
+  .mobile-menu-btn {
+    display: flex;
+  }
+  .collapse-btn {
+    display: none;
+  }
 }
 
 /* ==========================================================================
-   MODIFICATIONS : ÉTAT RÉDUIT (COLLAPSED)
+   ÉTAT RÉDUIT (COLLAPSED) – adaptations
    ========================================================================== */
 .sidebar.collapsed { 
   width: var(--sidebar-collapsed-w); 
 }
 
-/* On cache proprement les textes avec une transition */
 .sidebar.collapsed .brand-name,
 .sidebar.collapsed .user-info,
 .sidebar.collapsed .nav-section-label,
@@ -460,13 +498,12 @@ async function handleLogout() {
   overflow: hidden; 
 }
 
-/* Ajustements des blocs conteneurs en mode réduit */
 .sidebar.collapsed .sidebar-brand {
   padding: 0;
   justify-content: center;
 }
 .sidebar.collapsed .brand-logo {
-  display: none; /* On cache le logo pour ne laisser que le bouton flèche */
+  display: none;
 }
 .sidebar.collapsed .sidebar-user { 
   padding: 1.25rem 0; 
@@ -487,7 +524,6 @@ async function handleLogout() {
   padding: 0.7rem 0;
 }
 
-/* Recentrage et rotation du bouton en mode réduit */
 .sidebar.collapsed .collapse-btn {
   margin: 0;
 }
@@ -495,9 +531,6 @@ async function handleLogout() {
   transform: rotate(180deg); 
 }
 
-/* ==========================================================================
-   AJUSTEMENTS DES ÉLÉMENTS DE BASE (Pour les transitions)
-   ========================================================================== */
 .sidebar-brand {
   display: flex;
   align-items: center;

@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -86,67 +87,40 @@ class UserController extends Controller
      * POST /api/admin/users
      */
     public function store(Request $request): JsonResponse
-{
-    $validated = $request->validate([
+    {
+        $validated = $request->validate([
 
-        'nom'              => ['required','string','max:100'],
-
-        'prenom'           => ['required','string','max:100'],
-
-        'email'            => ['required','email','max:150','unique:users,email'],
-
-        'telephone_pro'    => ['nullable','string','max:20'],
-
-        'telephone_mobile' => ['nullable','string','max:20'],
-
-        'photo_profil'     => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
-
-        'role' => ['required','in:admin,responsable,chef_projet,magasinier'],
-
-        'password'         => ['required','confirmed',Password::min(8)],
-
-        'est_actif'        => ['boolean'],
-
-    ]);
-
-    $photo = null;
-
-    if($request->hasFile('photo_profil')){
-
-        $photo = $request->file('photo_profil')
-                         ->store('users','public');
+            'nom'              => ['required','string','max:100'],
+            'prenom'           => ['required','string','max:100'],
+            'email'            => ['required','email','max:150','unique:users,email'],
+            'telephone_pro'    => ['nullable','string','max:20'],
+            'telephone_mobile' => ['nullable','string','max:20'],
+            'photo_profil'     => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
+            'role' => ['required','in:admin,responsable,chef_projet,magasinier'],
+            'password'         => ['required','confirmed',Password::min(8)],
+            'est_actif'        => ['boolean'],
+        ]);
+        $photo = null;
+        if($request->hasFile('photo_profil')){
+            $photo = $request->file('photo_profil')
+                             ->store('users','public');
+        }
+        $user = User::create([
+            'nom'              => $validated['nom'],
+            'prenom'           => $validated['prenom'],
+            'email'            => $validated['email'],
+            'telephone_pro'    => $validated['telephone_pro'] ?? null,
+            'telephone_mobile' => $validated['telephone_mobile'] ?? null,
+            'photo_profil'     => $photo,
+            'role'             => $validated['role'],
+            'password'         => Hash::make($validated['password']),
+            'est_actif'        => $validated['est_actif'] ?? true,
+        ]);
+        return response()->json([
+            'message'=>'Utilisateur créé avec succès.',
+            'data'=>$user
+        ],201);
     }
-
-    $user = User::create([
-
-        'nom'              => $validated['nom'],
-
-        'prenom'           => $validated['prenom'],
-
-        'email'            => $validated['email'],
-
-        'telephone_pro'    => $validated['telephone_pro'] ?? null,
-
-        'telephone_mobile' => $validated['telephone_mobile'] ?? null,
-
-        'photo_profil'     => $photo,
-
-        'role'             => $validated['role'],
-
-        'password'         => Hash::make($validated['password']),
-
-        'est_actif'        => $validated['est_actif'] ?? true,
-
-    ]);
-
-    return response()->json([
-
-        'message'=>'Utilisateur créé avec succès.',
-
-        'data'=>$user
-
-    ],201);
-}
     /**
      * PUT /api/admin/users/{id}
      */
@@ -245,4 +219,24 @@ public function destroy(User $user): JsonResponse
             'est_actif' => $user->est_actif,
         ]);
     }
+
+    public function login(Request $request)
+{
+    $request->validate([
+        'email'    => 'required|email',
+        'password' => 'required',
+    ]);
+
+    $user = User::where('email', $request->email)->first();
+    if (!$user || !Hash::check($request->password, $user->password)) {
+        return response()->json(['message' => 'Identifiants incorrects.'], 401);
+    }
+    $user->updateLastLogin();
+    $token = $user->createToken('auth_token')->plainTextToken;
+    return response()->json([
+        'access_token' => $token,
+        'token_type'   => 'Bearer',
+        'user'         => $user,
+    ]);
+}
 }

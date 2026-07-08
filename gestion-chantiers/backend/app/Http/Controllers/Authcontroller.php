@@ -133,6 +133,7 @@ class AuthController extends Controller
             'telephone_mobile' => $user->telephone_mobile,
             'role'             => $user->role,
             'est_actif'        => $user->est_actif,
+            'permissions'      => $user->permissions(),
             'redirect_to'      => $this->getRedirectPath($user->role),
         ];
     }
@@ -140,14 +141,16 @@ class AuthController extends Controller
 
     /**
      * Retourner le chemin de redirection selon le rôle.
+     * Les 4 rôles partagent désormais le même espace applicatif
+     * (/admin/*), l'accès fin étant géré par permission.
      */
     private function getRedirectPath(string $role): string
     {
         return match ($role) {
             'admin'       => '/admin/dashboard',
-            'responsable' => '/responsable/dashboard',
-            'chef_projet' => '/chef-projet/dashboard',
-            'magasinier'  => '/magasinier/dashboard',
+            'responsable' => '/admin/dashboard',
+            'chef_projet' => '/admin/dashboard',
+            'magasinier'  => '/admin/dashboard',
             default       => '/',
         };
     }

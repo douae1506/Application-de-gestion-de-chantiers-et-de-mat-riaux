@@ -1,7 +1,6 @@
 <template>
   <div class="fv-wrap">
 
-    <!-- Header -->
     <div class="fv-header">
       <div>
         <h1>Gestion des Fournisseurs</h1>
@@ -10,7 +9,6 @@
       <button class="btn btn-primary" @click="openCreateModal">+ Nouveau fournisseur</button>
     </div>
 
-    <!-- Statistiques rapides -->
     <div class="stat-grid">
       <div class="stat-card">
         <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
@@ -18,7 +16,6 @@
       </div>
     </div>
 
-    <!-- Tableau -->
     <div class="table-card">
       <div v-if="loading" class="loading-state">
         <div class="spinner"></div><span>Chargement...</span>
@@ -41,53 +38,39 @@
             </tr>
           </thead>
           <tbody>
-  <tr v-for="f in fournisseurs" :key="f.id">
-    <td><strong>{{ f.nom }}</strong></td>
-
-    <td>{{ f.responsable || '—' }}</td>
-
-    <td>
-      <a v-if="f.email" :href="'mailto:' + f.email">
-        {{ f.email }}
-      </a>
-      <span v-else>—</span>
-    </td>
-
-    <td>{{ f.telephone || '—' }}</td>
-
-    <td>{{ f.adresse || '—' }}</td>
-
-    <td>{{ f.ville || '—' }}</td>
-
-    <td>{{ f.pays || '—' }}</td>
-
-    <td>{{ f.code_postal || '—' }}</td>
-
-    <td>
-      <a
-        v-if="f.site_web"
-        :href="f.site_web"
-        target="_blank"
-      >
-        {{ f.site_web }}
-      </a>
-      <span v-else>—</span>
-    </td>
-
-    <td>{{ f.observations || '—' }}</td>
-
-    <td>
-      <div class="action-btns">
-        <button class="btn btn-sm btn-outline" @click="openEditModal(f)">
-          ✏️
-        </button>
-        <button class="btn btn-sm btn-danger" @click="supprimer(f.id)">
-          🗑
-        </button>
-      </div>
-    </td>
-  </tr>
-</tbody>
+            <tr v-for="f in fournisseurs" :key="f.id">
+              <td><strong>{{ f.nom }}</strong></td>
+              <td>{{ f.responsable || '—' }}</td>
+              <td>
+                <a v-if="f.email" :href="'mailto:' + f.email">
+                  {{ f.email }}
+                </a>
+                <span v-else>—</span>
+              </td>
+              <td>{{ f.telephone || '—' }}</td>
+              <td>{{ f.adresse || '—' }}</td>
+              <td>{{ f.ville || '—' }}</td>
+              <td>{{ f.pays || '—' }}</td>
+              <td>{{ f.code_postal || '—' }}</td>
+              <td>
+                <a v-if="f.site_web" :href="f.site_web" target="_blank">
+                  {{ f.site_web }}
+                </a>
+                <span v-else>—</span>
+              </td>
+              <td>{{ f.observations || '—' }}</td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-action edit" @click="openEditModal(f)" title="Modifier">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
+                  <button class="btn-action delete" @click="supprimer(f.id)" title="Supprimer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
       <div v-else class="empty-state">
@@ -98,7 +81,6 @@
       </div>
     </div>
 
-    <!-- Modal de création / édition -->
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
       <div class="modal-box">
         <div class="modal-header">
@@ -187,7 +169,6 @@ const form = reactive({
   observations: '',
 })
 
-// Charger la liste
 async function fetchFournisseurs() {
   loading.value = true
   try {
@@ -200,7 +181,6 @@ async function fetchFournisseurs() {
   }
 }
 
-// Ouvrir modal de création
 function openCreateModal() {
   editMode.value = false
   editId.value = null
@@ -220,7 +200,6 @@ function openCreateModal() {
   showModal.value = true
 }
 
-// Ouvrir modal d'édition
 function openEditModal(f) {
   editMode.value = true
   editId.value = f.id
@@ -240,7 +219,6 @@ function openEditModal(f) {
   showModal.value = true
 }
 
-// Sauvegarder (création ou mise à jour)
 async function save() {
   formError.value = ''
   if (!form.nom) {
@@ -264,7 +242,6 @@ async function save() {
   }
 }
 
-// Supprimer
 async function supprimer(id) {
   if (!confirm('Supprimer définitivement ce fournisseur ?')) return
   try {
@@ -393,9 +370,40 @@ onMounted(() => {
 .data-table a:hover {
   text-decoration: underline;
 }
+
+/* Actions Style Recopié */
 .action-btns {
   display: flex;
   gap: .4rem;
+}
+.btn-action { 
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center; 
+  width: 32px; 
+  height: 32px; 
+  border-radius: 8px; 
+  border: 1px solid #e2e8f0; 
+  background: #fff; 
+  color: #64748b; 
+  cursor: pointer; 
+  transition: all 0.2s; 
+  flex-shrink: 0; 
+}
+.btn-action:hover { 
+  background: #f8fafc; 
+  color: #0f172a; 
+  border-color: #cbd5e1; 
+}
+.btn-action.edit:hover { 
+  color: #3b82f6; 
+  border-color: #bfdbfe; 
+  background: #eff6ff; 
+}
+.btn-action.delete:hover { 
+  color: #f43f5e; 
+  border-color: #fecdd3; 
+  background: #fff1f2; 
 }
 
 .loading-state {
@@ -477,7 +485,6 @@ onMounted(() => {
   color: #fff;
 }
 .btn-sm {
-  padding: .25rem .6rem;
   font-size: .78rem;
 }
 .btn:disabled {

@@ -1,19 +1,22 @@
+Voici le code complet corrigé et harmonisé sur le même modèle que la page des projets.
+
+Les icônes SVG dans le bouton d'ajout (`.page-header .btn-primary`) et les boutons d'action de la table et des cartes ont été ajustés avec des classes dédiées (`.btn-icon-svg` et `.action-icon-svg`) afin d'éviter tout étirement ou problème d'alignement Flexbox, notamment sur mobile.
+
+```vue
 <template>
   <div class="clients-page">
 
-    <!-- HEADER -->
     <div class="page-header">
       <div>
         <h1>Gestion des clients</h1>
         <p>{{ filteredClients.length }} client{{ filteredClients.length > 1 ? 's' : '' }} trouvé{{ filteredClients.length > 1 ? 's' : '' }}</p>
       </div>
-      <button class="btn-primary" @click="openModal('create')">
-        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+      <button class="btn btn-primary" @click="openModal('create')">
+        <svg viewBox="0 0 20 20" fill="currentColor" class="btn-icon-svg"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
         Ajouter un client
       </button>
     </div>
 
-    <!-- STATS -->
     <div class="stats-bar">
       <div class="stat-pill stat-pill--all" :class="{ active: filterType === '' }" @click="filterType = ''">
         <span class="stat-dot"></span> Tous <strong>{{ clients.length }}</strong>
@@ -26,7 +29,6 @@
       </div>
     </div>
 
-    <!-- TOOLBAR -->
     <div class="toolbar">
       <div class="search-box">
         <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
@@ -34,7 +36,6 @@
         <button v-if="search" class="clear-btn" @click="search = ''">×</button>
       </div>
       <div class="toolbar-right">
-       
         <div class="view-toggle">
           <button :class="{ active: view === 'table' }" @click="view = 'table'">
             <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
@@ -46,71 +47,72 @@
       </div>
     </div>
 
-    <!-- TABLE VIEW -->
     <div v-if="view === 'table'" class="table-card">
-      <table class="clients-table">
-        <thead>
-          <tr>
-            <th><input type="checkbox" @change="toggleAll" :checked="allSelected" /></th>
-            <th>Client</th>
-            <th>Type</th>
-            <th>Email</th>
-            <th>Téléphone</th>
-            <th>Ville</th>
-            <th>Entreprise</th>
-            <th>Statut</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="c in paginatedClients" :key="c.id" @click="goToProfile(c)" :class="{ selected: selected.includes(c.id) }">
-            <td><input type="checkbox" :value="c.id" v-model="selected" /></td>
-            <td>
-              <div class="client-cell">
-                <div class="avatar" :style="{ background: avatarColor(c.type_client) }">
-                  <img v-if="c.photo" :src="getPhotoUrl(c.photo)" alt="photo" />
-                  <span v-else>{{ initials(c) }}</span>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" @change="toggleAll" :checked="allSelected" /></th>
+              <th>Client</th>
+              <th>Type</th>
+              <th>Email</th>
+              <th>Téléphone</th>
+              <th>Ville</th>
+              <th>Entreprise</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="c in paginatedClients" :key="c.id" @click="goToProfile(c)" :class="{ selected: selected.includes(c.id) }" style="cursor: pointer;">
+              <td @click.stop><input type="checkbox" :value="c.id" v-model="selected" /></td>
+              <td>
+                <div class="client-cell">
+                  <div class="avatar" :style="{ background: avatarColor(c.type_client) }">
+                    <img v-if="c.photo" :src="getPhotoUrl(c.photo)" alt="photo" />
+                    <span v-else>{{ initials(c) }}</span>
+                  </div>
+                  <div>
+                    <p class="client-name"><strong>{{ c.prenom }} {{ c.nom }}</strong></p>
+                    <p class="client-email text-muted">{{ c.email }}</p>
+                  </div>
                 </div>
-                <div>
-                  <p class="client-name">{{ c.prenom }} {{ c.nom }}</p>
-                  <p class="client-email">{{ c.email }}</p>
+              </td>
+              <td><span class="type-badge" :class="'type-' + c.type_client">{{ typeLabel(c.type_client) }}</span></td>
+              <td><span class="email-cell">{{ c.email }}</span></td>
+              <td><p class="contact-line">{{ c.telephone || '—' }}</p></td>
+              <td>{{ c.ville || '—' }}</td>
+              <td>{{ c.entreprise || '—' }}</td>
+              <td>
+                <button class="status-toggle" :class="c.est_actif ? 'active' : 'inactive'" @click.stop="toggleStatus(c)">
+                  <span class="status-dot"></span>
+                  {{ c.est_actif ? 'Actif' : 'Inactif' }}
+                </button>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-action edit" @click.stop="openModal('edit', c)" title="Modifier">
+                    <svg viewBox="0 0 20 20" fill="currentColor" class="action-icon-svg"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+                  </button>
+                  <button class="btn-action delete" @click.stop="confirmDelete(c)" title="Supprimer">
+                    <svg viewBox="0 0 20 20" fill="currentColor" class="action-icon-svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                  </button>
                 </div>
-              </div>
-            </td>
-            <td><span class="type-badge" :class="'type-' + c.type_client">{{ typeLabel(c.type_client) }}</span></td>
-            <td><span class="email-cell">{{ c.email }}</span></td>
-            <td><p class="contact-line">{{ c.telephone || '—' }}</p></td>
-            <td>{{ c.ville || '—' }}</td>
-            <td>{{ c.entreprise || '—' }}</td>
-            <td>
-              <button class="status-toggle" :class="c.est_actif ? 'active' : 'inactive'" @click.stop="toggleStatus(c)">
-                <span class="status-dot"></span>
-                {{ c.est_actif ? 'Actif' : 'Inactif' }}
-              </button>
-            </td>
-            <td>
-              <div class="action-btns">
-                <button class="action-btn edit" @click.stop="openModal('edit', c)" title="Modifier">
-                  <svg viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
-                </button>
-                <button class="action-btn delete" @click.stop="confirmDelete(c)" title="Supprimer">
-                  <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr v-if="filteredClients.length === 0">
-            <td colspan="9" class="empty-row">
-              <div class="empty-state">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                <p>Aucun client trouvé</p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+            </tr>
+            <tr v-if="filteredClients.length === 0">
+              <td colspan="9" class="empty-row">
+                <div class="empty-state">
+                  <span>👥</span>
+                  <h3>Aucun client trouvé</h3>
+                  <p>Modifiez vos filtres ou lancez une nouvelle recherche.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-      <!-- Pagination -->
       <div class="pagination">
         <span class="page-info">{{ (currentPage-1)*perPage+1 }}–{{ Math.min(currentPage*perPage, filteredClients.length) }} sur {{ filteredClients.length }}</span>
         <div class="page-btns">
@@ -125,7 +127,6 @@
       </div>
     </div>
 
-    <!-- CARDS VIEW -->
     <div v-else class="client-cards">
       <div class="client-card" v-for="c in paginatedClients" :key="c.id" @click="goToProfile(c)">
         <div class="cc-header" :style="{ background: cardGradient(c.type_client) }">
@@ -136,24 +137,24 @@
         </div>
         <div class="cc-body">
           <h4>{{ c.prenom }} {{ c.nom }}</h4>
-          <p class="cc-email">{{ c.email }}</p>
+          <p class="cc-email text-muted">{{ c.email }}</p>
           <span class="type-badge" :class="'type-' + c.type_client">{{ typeLabel(c.type_client) }}</span>
           <div class="cc-actions">
-            <button class="action-btn edit" @click.stop="openModal('edit', c)"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>
-            <button class="action-btn delete" @click.stop="confirmDelete(c)"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg></button>
+            <button class="btn-action edit" @click.stop="openModal('edit', c)">
+              <svg viewBox="0 0 20 20" fill="currentColor" class="action-icon-svg"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+            </button>
+            <button class="btn-action delete" @click.stop="confirmDelete(c)">
+              <svg viewBox="0 0 20 20" fill="currentColor" class="action-icon-svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ════════════════════════════════════════════════════════ -->
-    <!-- MODAL CREATE / EDIT                                      -->
-    <!-- ════════════════════════════════════════════════════════ -->
     <Teleport to="body">
       <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-        <div class="modal">
+        <div class="modal-box">
 
-          <!-- Header -->
           <div class="modal-header">
             <div class="modal-title-area">
               <div class="modal-icon" :style="{ background: modalMode === 'create' ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'linear-gradient(135deg,#f857a6,#ff5858)' }">
@@ -167,48 +168,42 @@
                 <p>{{ modalMode === 'create' ? 'Créer un nouveau client' : `Modifier ${form.prenom} ${form.nom}` }}</p>
               </div>
             </div>
-            <button class="modal-close" @click="closeModal">
-              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
-            </button>
+            <button class="modal-close" @click="closeModal">×</button>
           </div>
 
-          <!-- Body -->
           <div class="modal-body">
             <div v-if="formError" class="form-alert">⚠ {{ formError }}</div>
-<div class="form-row">
+            
+            <div class="form-row">
+              <div class="form-field" :class="{ error: formErrors.nom }">
+                <label>Nom <span class="req">*</span></label>
+                <input v-model="form.nom" placeholder="Nom">
+                <span v-if="formErrors.nom" class="fe">{{ formErrors.nom }}</span>
+              </div>
+              <div class="form-field" :class="{ error: formErrors.prenom }">
+                <label>Prénom <span class="req">*</span></label>
+                <input v-model="form.prenom" placeholder="Prénom">
+                <span v-if="formErrors.prenom" class="fe">{{ formErrors.prenom }}</span>
+              </div>
+            </div>
 
-    <div class="form-field">
-        <label>Nom</label>
-        <input
-            v-model="form.nom"
-            placeholder="Nom">
-    </div>
-
-    <div class="form-field">
-        <label>Prénom</label>
-        <input
-            v-model="form.prenom"
-            placeholder="Prénom">
-    </div>
-
-</div>
- <!-- Email -->
             <div class="form-field" :class="{ error: formErrors.email }">
               <label>Email <span class="req">*</span></label>
               <input v-model="form.email" type="email" placeholder="client@email.com" />
               <span v-if="formErrors.email" class="fe">{{ formErrors.email }}</span>
             </div>
 
-            <!-- Téléphone -->
-            <div class="form-field">
-              <label>Téléphone</label>
-              <input v-model="form.telephone" type="tel" placeholder="+212 5XX XXX XXX" />
+            <div class="form-row">
+              <div class="form-field">
+                <label>Téléphone</label>
+                <input v-model="form.telephone" type="tel" placeholder="+212 5XX XXX XXX" />
+              </div>
+              <div class="form-field">
+                <label>Téléphone secondaire</label>
+                <input v-model="form.telephone_secondaire" type="text" placeholder="+212...">
+              </div>
             </div>
-            <div class="form-field">
-              <label>Téléphone secondaire</label>
-              <input v-model="form.telephone_secondaire" type="text" placeholder="+212...">
-            </div>
-        <!-- Ville / Entreprise -->
+
             <div class="form-row">
               <div class="form-field">
                 <label>Ville</label>
@@ -220,17 +215,11 @@
               </div>
             </div>
             
+            <div class="form-field">
+              <label>Adresse</label>
+              <textarea rows="2" v-model="form.adresse" placeholder="Adresse complète"></textarea>
+            </div>
 
-<div class="form-field">
-    <label>Adresse</label>
-    <textarea
-        rows="2"
-        v-model="form.adresse"
-        placeholder="Adresse complète">
-    </textarea>
-</div>
-
-            <!-- Type client -->
             <div class="form-field" :class="{ error: formErrors.type_client }">
               <label>Type de client <span class="req">*</span></label>
               <div class="type-selector">
@@ -244,25 +233,21 @@
               </div>
               <span v-if="formErrors.type_client" class="fe">{{ formErrors.type_client }}</span>
             </div>
-            <div class="form-field">
-               <label>Dernier contact</label>
-                <input type="date" v-model="form.dernier_contact"
-    >
-</div>
 
-            <!-- Notes -->
+            <div class="form-field">
+              <label>Dernier contact</label>
+              <input type="date" v-model="form.dernier_contact">
+            </div>
+
             <div class="form-field">
               <label>Notes</label>
               <textarea v-model="form.notes" placeholder="Informations complémentaires…" rows="3"></textarea>
             </div>
-
-            
           </div>
 
-          <!-- Footer -->
           <div class="modal-footer">
-            <button class="btn-cancel" @click="closeModal">Annuler</button>
-            <button class="btn-save" @click="saveClient" :disabled="saving">
+            <button class="btn btn-secondary" @click="closeModal">Annuler</button>
+            <button class="btn btn-primary" @click="saveClient" :disabled="saving">
               <span v-if="saving" class="mini-spinner"></span>
               {{ saving ? 'Enregistrement…' : (modalMode === 'create' ? 'Créer le client' : 'Enregistrer') }}
             </button>
@@ -270,17 +255,18 @@
         </div>
       </div>
 
-      <!-- DELETE CONFIRMATION -->
       <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
-        <div class="confirm-modal">
-          <div class="confirm-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>Supprimer ce client ?</h3>
+            <button class="modal-close" @click="showDeleteConfirm = false">×</button>
           </div>
-          <h3>Supprimer ce client ?</h3>
-          <p>Êtes-vous sûr de vouloir supprimer <strong>{{ deleteTarget?.prenom }} {{ deleteTarget?.nom }}</strong> ? Cette action est irréversible.</p>
-          <div class="confirm-actions">
-            <button class="btn-cancel" @click="showDeleteConfirm = false">Annuler</button>
-            <button class="btn-delete" @click="doDelete">Oui, supprimer</button>
+          <div style="padding: 1.5rem; text-align: center;">
+            <p>Êtes-vous sûr de vouloir supprimer <strong>{{ deleteTarget?.prenom }} {{ deleteTarget?.nom }}</strong> ? Cette action est irréversible.</p>
+            <div style="display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.5rem;">
+              <button class="btn btn-secondary" @click="showDeleteConfirm = false">Annuler</button>
+              <button class="btn btn-danger" @click="doDelete">Oui, supprimer</button>
+            </div>
           </div>
         </div>
       </div>
@@ -312,29 +298,23 @@ const filteredClients = computed(() => {
     const matchSearch = !q ||
       `${c.nom} ${c.prenom} ${c.email}`.toLowerCase().includes(q)
     const matchType = !filterType.value || c.type_client === filterType.value
-    const matchStatus = filterStatus.value === '' ||
-      String(c.est_actif) === filterStatus.value
+    const matchStatus = filterStatus.value === '' || String(c.est_actif) === filterStatus.value
     return matchSearch && matchType && matchStatus
   })
 })
 
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredClients.value.length / perPage))
-)
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredClients.value.length / perPage)))
 
 const paginatedClients = computed(() => {
   const start = (currentPage.value - 1) * perPage
   return filteredClients.value.slice(start, start + perPage)
 })
 
-const countByType = (type) =>
-  clients.value.filter(c => c.type_client === type).length
+const countByType = (type) => clients.value.filter(c => c.type_client === type).length
 
 // ── Sélection (checkbox) ────────────────────────────────────
 const selected = ref([])
-const allSelected = computed(() =>
-  paginatedClients.value.every(c => selected.value.includes(c.id))
-)
+const allSelected = computed(() => paginatedClients.value.length > 0 && paginatedClients.value.every(c => selected.value.includes(c.id)))
 
 function toggleAll(e) {
   if (e.target.checked) {
@@ -348,7 +328,7 @@ function toggleAll(e) {
 async function loadClients() {
   try {
     const res = await clientService.getClients()
-    clients.value = res.data.data
+    clients.value = res.data.data || res.data
   } catch (e) {
     console.error('Erreur chargement clients', e)
   }
@@ -384,7 +364,7 @@ function cardGradient(type) {
 
 // ── Navigation ──────────────────────────────────────────────
 function goToProfile(client) {
-  router.push(`/clients/${client.id}`)
+  router.push({ name: 'client-profile', params: { id: client.id } })
 }
 
 // ── MODAL ────────────────────────────────────────────────────
@@ -440,10 +420,13 @@ function openModal(mode, client = null) {
       prenom: '',
       email: '',
       telephone: '',
+      telephone_secondaire: '',
       ville: '',
+      adresse: '',
       entreprise: '',
       type_client: 'particulier',
       notes: '',
+      dernier_contact: '',
       est_actif: true,
       photo: null
     })
@@ -461,16 +444,11 @@ function closeModal() {
   showModal.value = false
 }
 
-function handleFile(e) {
-  const file = e.target.files[0]
-  if (file) form.photo = file
-}
-
 function validate() {
   Object.keys(formErrors).forEach(k => delete formErrors[k])
-  if (!form.prenom.trim()) formErrors.prenom = 'Le prénom est requis.'
-  if (!form.nom.trim()) formErrors.nom = 'Le nom est requis.'
-  if (!form.email.trim()) formErrors.email = 'L\'email est requis.'
+  if (!form.prenom?.trim()) formErrors.prenom = 'Le prénom est requis.'
+  if (!form.nom?.trim()) formErrors.nom = 'Le nom est requis.'
+  if (!form.email?.trim()) formErrors.email = 'L\'email est requis.'
   if (!form.type_client) formErrors.type_client = 'Sélectionnez un type.'
   return Object.keys(formErrors).length === 0
 }
@@ -540,1069 +518,222 @@ async function doDelete() {
 </script>
 
 <style scoped>
-/* ── Page header ──────────────────────────────── */
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-.page-header h1 {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #1e2a4a;
-  margin: 0 0 0.2rem;
-}
-.page-header p {
-  font-size: 0.875rem;
-  color: #8a94b2;
-  margin: 0;
-}
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.6rem 1.1rem;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  border: none;
-  border-radius: 10px;
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-  transition: opacity 0.15s;
-  white-space: nowrap;
-}
-.btn-primary svg {
-  width: 15px;
-  height: 15px;
-}
-.btn-primary:hover {
-  opacity: 0.9;
+/* ── Page Layout ──────────────────────────────── */
+.clients-page {
+  margin: -42px;
+  padding: 40px 24px;
+  background-color: #f8fafc;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* ── Stats bar ────────────────────────────────── */
-.stats-bar {
-  display: flex;
-  gap: 0.6rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
+/* ── Header ───────────────────────────────────── */
+.page-header { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  margin-bottom: 1.25rem; 
+  gap: 1rem; 
+  flex-wrap: wrap; 
 }
-.stat-pill {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 1rem;
-  border-radius: 20px;
-  border: 1.5px solid #e4e9f2;
-  background: #fff;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: #8a94b2;
-  cursor: pointer;
-  transition: all 0.15s;
+.page-header h1 { font-size: 1.4rem; font-weight: 700; color: #1e2a4a; margin: 0 0 .2rem; }
+.page-header p { font-size: .875rem; color: #8a94b2; margin: 0; }
+
+.page-header .btn-primary {
+  align-self: center;
+  height: fit-content;
 }
-.stat-pill strong {
-  color: #1e2a4a;
-  margin-left: 0.25rem;
+
+/* Fixation explicite de la taille du SVG dans le bouton d'ajout */
+.btn-icon-svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
-.stat-pill .stat-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+
+/* Fixation explicite des icônes d'actions (edit/delete) */
+.action-icon-svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
-.stat-pill--all .stat-dot {
-  background: #6366f1;
-}
-.stat-pill--part .stat-dot {
-  background: #6366f1;
-}
-.stat-pill--ent .stat-dot {
-  background: #fb923c;
-}
-.stat-pill.active {
-  border-color: #6366f1;
-  background: #eff6ff;
-  color: #4f46e5;
-}
-.stat-pill--ent.active {
-  border-color: #fb923c;
-  background: #fff7ed;
-  color: #ea580c;
-}
+
+/* ── Stats ────────────────────────────────────── */
+.stats-bar { display: flex; gap: .6rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.stat-pill { display: flex; align-items: center; gap: .5rem; padding: .45rem 1rem; border-radius: 20px; border: 1.5px solid #e4e9f2; background: #fff; font-size: .82rem; font-weight: 500; color: #8a94b2; cursor: pointer; transition: all .15s; }
+.stat-pill strong { color: #1e2a4a; margin-left: .25rem; }
+.stat-pill .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+.stat-pill--all .stat-dot { background: #6366f1; }
+.stat-pill--part .stat-dot { background: #8b5cf6; }
+.stat-pill--ent .stat-dot { background: #f97316; }
+.stat-pill.active { border-color: #6366f1; background: #eff6ff; color: #4f46e5; }
 
 /* ── Toolbar ──────────────────────────────────── */
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-.search-box {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: #fff;
-  border: 1.5px solid #e4e9f2;
-  border-radius: 10px;
-  padding: 0.5rem 0.85rem;
-  flex: 1;
-  max-width: 360px;
-  transition: border-color 0.2s;
-}
-.search-box:focus-within {
-  border-color: #6366f1;
-}
-.search-box svg {
-  width: 16px;
-  height: 16px;
-  color: #8a94b2;
-  flex-shrink: 0;
-}
-.search-box input {
-  border: none;
-  outline: none;
-  font-size: 0.875rem;
-  color: #1e2a4a;
-  flex: 1;
-  background: none;
-}
-.search-box input::placeholder {
-  color: #94a3b8;
-}
-.clear-btn {
-  background: none;
-  border: none;
-  font-size: 1.1rem;
-  color: #94a3b8;
-  cursor: pointer;
-  line-height: 1;
-}
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-.filter-select {
-  padding: 0.5rem 0.85rem;
-  border: 1.5px solid #e4e9f2;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  color: #1e2a4a;
-  background: #fff;
-  cursor: pointer;
-  outline: none;
-}
-.view-toggle {
-  display: flex;
-  background: #f0f2f8;
-  border-radius: 8px;
-  padding: 3px;
-  gap: 2px;
-}
-.view-toggle button {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: none;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #8a94b2;
-  transition: all 0.15s;
-}
-.view-toggle button svg {
-  width: 16px;
-  height: 16px;
-}
-.view-toggle button.active {
-  background: #fff;
-  color: #6366f1;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
+.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: .75rem; flex-wrap: wrap; }
+.search-box { display: flex; align-items: center; gap: .5rem; background: #fff; border: 1.5px solid #e4e9f2; border-radius: 10px; padding: .5rem .85rem; flex: 1; max-width: 360px; transition: border-color .2s; }
+.search-box:focus-within { border-color: #6366f1; }
+.search-box svg { width: 16px; height: 16px; color: #8a94b2; flex-shrink: 0; }
+.search-box input { border: none; outline: none; font-size: .875rem; color: #1e2a4a; flex: 1; background: none; }
+.search-box input::placeholder { color: #94a3b8; }
+.clear-btn { background: none; border: none; font-size: 1.1rem; color: #94a3b8; cursor: pointer; line-height: 1; }
+.toolbar-right { display: flex; align-items: center; gap: .6rem; }
+.view-toggle { display: flex; background: #f0f2f8; border-radius: 8px; padding: 3px; gap: 2px; }
+.view-toggle button { width: 32px; height: 32px; border: none; background: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #8a94b2; transition: all .15s; }
+.view-toggle button svg { width: 16px; height: 16px; }
+.view-toggle button.active { background: #fff; color: #6366f1; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 
-/* ── Table ────────────────────────────────────── */
-.table-card {
-  background: #fff;
-  border-radius: 16px;
-  border: 1px solid #e4e9f2;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-}
-.clients-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.clients-table thead {
-  background: #f8fafc;
-}
-.clients-table th {
-  padding: 0.85rem 1rem;
+/* ── Badges & Cells ───────────────────────────── */
+.type-badge { display: inline-flex; align-items: center; padding: .25rem .75rem; border-radius: 20px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.type-particulier { background: #e0e7ff; color: #4338ca; }
+.type-entreprise { background: #ffedd5; color: #c2410c; }
+
+.client-cell { display: flex; align-items: center; gap: .75rem; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: .8rem; font-weight: 600; overflow: hidden; flex-shrink: 0; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.client-name { margin: 0; font-size: .88rem; color: #0f172a; }
+.client-email { margin: 0; font-size: .75rem; }
+
+.status-toggle { display: inline-flex; align-items: center; gap: .4rem; padding: .25rem .75rem; border-radius: 15px; border: 1px solid #e2e8f0; background: #fff; font-size: .75rem; font-weight: 600; cursor: pointer; transition: all .2s; }
+.status-toggle.active { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+.status-toggle.inactive { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+.status-toggle .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ── Table Base Layout ────────────────────────── */
+.table-card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 2rem; }
+.table-wrap { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.data-table th {
+  padding: .75rem 1rem;
+  border-bottom: 2px solid #e2e8f0;
   text-align: left;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #8a94b2;
+  color: #475569;
+  font-weight: 600;
+  font-size: .78rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid #e4e9f2;
-  white-space: nowrap;
-}
-.clients-table td {
-  padding: 0.9rem 1rem;
-  border-bottom: 1px solid #f0f2f8;
-  font-size: 0.875rem;
-  color: #1e2a4a;
-  vertical-align: middle;
-}
-.clients-table tr:last-child td {
-  border-bottom: none;
-}
-.clients-table tr.selected td {
-  background: #f5f3ff;
-}
-.clients-table tr:hover td {
-  background: #fafbff;
-}
-.clients-table input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  accent-color: #6366f1;
-  cursor: pointer;
-}
-.client-cell {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-.avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #fff;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-.avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.client-name {
-  font-weight: 600;
-  color: #1e2a4a;
-  margin: 0;
-}
-.client-email {
-  font-size: 0.78rem;
-  color: #8a94b2;
-  margin: 0.1rem 0 0;
-}
-.type-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.type-particulier {
-  background: rgba(99, 102, 241, 0.1);
-  color: #4f46e5;
-}
-.type-entreprise {
-  background: rgba(251, 146, 60, 0.1);
-  color: #ea580c;
-}
-.contact-line {
-  font-size: 0.82rem;
-  color: #475569;
-  margin: 0;
-}
-.email-cell {
-  font-size: 0.82rem;
-}
-.status-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: 20px;
-  border: none;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.status-toggle .status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-.status-toggle.active {
-  background: rgba(34, 197, 94, 0.1);
-  color: #15803d;
-}
-.status-toggle.active .status-dot {
-  background: #22c55e;
-}
-.status-toggle.inactive {
-  background: rgba(148, 163, 184, 0.12);
-  color: #64748b;
-}
-.status-toggle.inactive .status-dot {
-  background: #94a3b8;
-}
-.action-btns {
-  display: flex;
-  gap: 0.4rem;
-}
-.action-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.action-btn svg {
-  width: 14px;
-  height: 14px;
-}
-.action-btn.edit {
-  background: rgba(99, 102, 241, 0.08);
-  color: #6366f1;
-}
-.action-btn.edit:hover {
-  background: rgba(99, 102, 241, 0.18);
-}
-.action-btn.delete {
-  background: rgba(239, 68, 68, 0.08);
-  color: #ef4444;
-}
-.action-btn.delete:hover {
-  background: rgba(239, 68, 68, 0.18);
-}
-.empty-row {
-  text-align: center;
-  padding: 3rem !important;
-}
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  color: #94a3b8;
-}
-.empty-state svg {
-  width: 48px;
-  height: 48px;
-}
-.empty-state p {
-  font-size: 0.875rem;
-}
-
-/* ── Pagination ────────────────────────────────── */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.85rem 1.25rem;
-  border-top: 1px solid #f0f2f8;
-}
-.page-info {
-  font-size: 0.8rem;
-  color: #8a94b2;
-}
-.page-btns {
-  display: flex;
-  gap: 0.3rem;
-}
-.page-btns button {
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  border: 1.5px solid #e4e9f2;
-  background: #fff;
-  color: #475569;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-.page-btns button svg {
-  width: 14px;
-  height: 14px;
-}
-.page-btns button:hover:not(:disabled) {
-  border-color: #6366f1;
-  color: #6366f1;
-}
-.page-btns button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.page-btns button.current {
-  background: #6366f1;
-  border-color: #6366f1;
-  color: #fff;
-}
-
-/* ── Cards view ────────────────────────────────── */
-.client-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
-}
-.client-card {
-  background: #fff;
-  border-radius: 16px;
-  border: 1px solid #e4e9f2;
-  overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-}
-.cc-header {
-  padding: 1.5rem 1rem 3rem;
-  position: relative;
-  display: flex;
-  justify-content: flex-end;
-}
-.cc-avatar {
-  position: absolute;
-  bottom: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 3px solid #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.25);
-}
-.cc-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.cc-avatar span {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: rgba(229, 152, 93, 0.48);
-}
-.cc-status {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.6rem;
-  border-radius: 10px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-.cc-status.active {
-  background: rgba(34, 197, 94, 0.3);
-}
-.cc-status.inactive {
-  background: rgba(148, 163, 184, 0.3);
-}
-.cc-body {
-  padding: 1.5rem 1rem 1rem;
-  text-align: center;
-}
-.cc-body h4 {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #1e2a4a;
-  margin: 0 0 0.2rem;
-}
-.cc-email {
-  font-size: 0.75rem;
-  color: #8a94b2;
-  margin: 0 0 0.75rem;
-}
-.cc-actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-  margin-top: 0.85rem;
-}
-
-/* ── Modal ─────────────────────────────────────── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-  backdrop-filter: blur(4px);
-}
-.modal {
-  background: #fff;
-  border-radius: 20px;
-  width: 100%;
-  max-width: 540px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-}
-.modal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 1.5rem;
-  border-bottom: 1px solid #f0f2f8;
-}
-.modal-title-area {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.9rem;
-}
-.modal-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  flex-shrink: 0;
-}
-.modal-icon svg {
-  width: 20px;
-  height: 20px;
-}
-.modal-title-area h2 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1e2a4a;
-  margin: 0 0 0.2rem;
-}
-.modal-title-area p {
-  font-size: 0.8rem;
-  color: #8a94b2;
-  margin: 0;
-}
-.modal-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #8a94b2;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  transition: background 0.15s;
-}
-.modal-close:hover {
-  background: #f0f2f8;
-  color: #1e2a4a;
-}
-.modal-close svg {
-  width: 18px;
-  height: 18px;
-}
-.modal-body {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.form-alert {
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  font-size: 0.85rem;
-}
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.9rem;
-}
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-.form-field label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #374151;
-}
-.req {
-  color: #f857a6;
-}
-.form-field input,
-.form-field textarea {
-  padding: 0.65rem 0.9rem;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  color: #1e2a4a;
-  outline: none;
-  background: #f9fafb;
-  transition: all 0.2s;
-  width: 100%;
-}
-.form-field input:focus,
-.form-field textarea:focus {
-  border-color: #6366f1;
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.08);
-}
-.form-field.error input,
-.form-field.error textarea {
-  border-color: #ef4444;
-}
-.fe {
-  font-size: 0.75rem;
-  color: #dc2626;
-  font-weight: 500;
-}
-.preview-photo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-  padding: 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  letter-spacing: .04em;
   background: #f8fafc;
+  white-space: nowrap;
 }
-.preview-photo img {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #e5e7eb;
-}
-.photo-info {
-  display: flex;
-  flex-direction: column;
-}
-.photo-label {
-  font-size: 12px;
-  color: #64748b;
-}
-.photo-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-}
-.type-selector {
-  display: flex;
-  gap: 0.5rem;
-}
-.type-opt {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.75rem 0.5rem;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
-  cursor: pointer;
-  text-align: center;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #64748b;
-  transition: all 0.15s;
-  background: #f9fafb;
-}
-.type-opt.selected {
-  border-color: #6366f1;
-  background: #eff6ff;
-  color: #4f46e5;
-}
-.type-opt-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.type-opt-icon svg {
-  width: 18px;
-  height: 18px;
-}
-.toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-.toggle-switch {
-  width: 44px;
-  height: 24px;
-  border-radius: 12px;
-  background: #e2e8f0;
-  border: none;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.2s;
-  padding: 0;
-}
-.toggle-switch.on {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-}
-.toggle-knob {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #fff;
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-.toggle-switch.on .toggle-knob {
-  transform: translateX(20px);
-}
-.toggle-label {
-  font-size: 0.875rem;
-  color: #475569;
-  font-weight: 500;
-}
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1.25rem 1.5rem;
-  border-top: 1px solid #f0f2f8;
-}
-.btn-cancel {
-  padding: 0.6rem 1.25rem;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  background: #fff;
-  color: #475569;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.btn-save {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.6rem 1.25rem;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  border: none;
-  border-radius: 10px;
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-}
-.btn-save:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-.mini-spinner {
-  width: 15px;
-  height: 15px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  flex-shrink: 0;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+.data-table td { padding: .75rem 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.data-table tbody tr:hover td { background: #f8fafc; }
+.data-table tbody tr.selected td { background: #eff6ff; }
+.data-table tbody tr:last-child td { border-bottom: none; }
 
-/* Confirm modal */
-.confirm-modal {
-  background: #fff;
-  border-radius: 16px;
-  padding: 2rem;
-  max-width: 380px;
-  width: 100%;
-  text-align: center;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+/* ── Actions buttons ──────────────────────────── */
+.action-btns { display: flex; gap: .4rem; }
+.btn-action { 
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center; 
+  width: 32px; 
+  height: 32px; 
+  border-radius: 8px; 
+  border: 1px solid #e2e8f0; 
+  background: #fff; 
+  color: #64748b; 
+  cursor: pointer; 
+  transition: all 0.2s; 
+  flex-shrink: 0; 
 }
-.confirm-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: rgba(239, 68, 68, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem;
-  color: #ef4444;
-}
-.confirm-icon svg {
-  width: 28px;
-  height: 28px;
-}
-.confirm-modal h3 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1e2a4a;
-  margin: 0 0 0.5rem;
-}
-.confirm-modal p {
-  font-size: 0.875rem;
-  color: #64748b;
-  line-height: 1.6;
-  margin: 0 0 1.5rem;
-}
-.confirm-actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: center;
-}
-.btn-delete {
-  padding: 0.6rem 1.5rem;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  border: none;
-  border-radius: 10px;
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
+.btn-action:hover { background: #f8fafc; color: #0f172a; border-color: #cbd5e1; }
+.btn-action.edit:hover { color: #3b82f6; border-color: #bfdbfe; background: #eff6ff; }
+.btn-action.delete:hover { color: #f43f5e; border-color: #fecdd3; background: #fff1f2; }
 
-/* ── Responsive ────────────────────────────────── */
-@media (max-width: 640px) {
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-  .type-selector {
-    flex-wrap: wrap;
-  }
-}
+/* ── Globals Buttons ──────────────────────────── */
+.btn { padding: .5rem 1rem; font-size: .85rem; font-weight: 600; border-radius: 8px; cursor: pointer; border: 1px solid #e2e8f0; transition: all .2s; display: inline-flex; align-items: center; gap: .4rem; }
+.btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-secondary { background: #fff; color: #334155; }
+.btn-secondary:hover { background: #f8fafc; }
+.btn-danger { background: #fff1f2; color: #e11d48; border-color: #ffe4e6; }
+.btn-danger:hover { background: #ffe4e6; }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
 
-/* =======================
-   CLIENT CARDS
-======================= */
+/* ── Modal Structure ──────────────────────────── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.5); display: flex; align-items: center; justify-content: center; z-index: 999; backdrop-filter: blur(4px); }
+.modal-box { background: #fff; border-radius: 16px; width: 560px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; background: #fff; z-index: 1; }
+.modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; line-height: 1; }
+.modal-title-area { display: flex; align-items: center; gap: 1rem; }
+.modal-title-area h2 { margin: 0; font-size: 1.2rem; font-weight: 700; color: #0f172a; }
+.modal-title-area p { margin: 2px 0 0; font-size: .8rem; color: #64748b; }
+.modal-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
+.modal-icon svg { width: 20px; height: 20px; }
 
-.client-cards{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
-    gap:28px;
-    margin-top:25px;
-}
+.modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+.modal-footer { padding: 1rem 1.5rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: .75rem; background: #f8fafc; }
 
-.client-card{
-    background:#fff;
-    border-radius:22px;
-    overflow:hidden;
-    box-shadow:0 8px 30px rgba(15,23,42,.08);
-    transition:.35s;
-    cursor:pointer;
-    position:relative;
-    border:1px solid #eef2f7;
-}
+/* Form Elements */
+.form-row { display: flex; gap: 1rem; }
+.form-row .form-field { flex: 1; }
+.form-field { display: flex; flex-direction: column; gap: .35rem; }
+.form-field label { font-size: .8rem; font-weight: 600; color: #475569; }
+.form-field label .req { color: #ef4444; }
+.form-field input, .form-field textarea { padding: .55rem .75rem; border: 1.5px solid #e4e9f2; border-radius: 8px; font-size: .88rem; outline: none; transition: border-color .2s; font-family: inherit; }
+.form-field input:focus, .form-field textarea:focus { border-color: #6366f1; }
+.form-field.error input { border-color: #ef4444; }
+.form-field .fe { font-size: .75rem; color: #ef4444; font-weight: 500; }
+.form-alert { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; padding: .75rem; border-radius: 8px; font-size: .85rem; font-weight: 500; }
 
-.client-card:hover{
-    transform:translateY(-8px);
-    box-shadow:0 18px 45px rgba(99,102,241,.18);
-}
+/* Type selector logic */
+.type-selector { display: flex; gap: .75rem; }
+.type-opt { flex: 1; display: flex; align-items: center; gap: .75rem; padding: .6rem 1rem; border: 1.5px solid #e4e9f2; border-radius: 10px; cursor: pointer; transition: all .2s; font-size: .85rem; font-weight: 600; color: #475569; }
+.type-opt.selected { border-color: #6366f1; background: #f5f3ff; color: #4f46e5; }
+.type-opt-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.type-opt-icon svg { width: 16px; height: 16px; }
 
-/* HEADER */
+.mini-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.cc-header{
-    height:110px;
-    position:relative;
-    display:flex;
-    justify-content:flex-end;
-    padding:18px;
-}
+/* ── Empty State ──────────────────────────────── */
+.empty-row { padding: 0 !important; }
+.empty-state { text-align: center; padding: 4rem 2rem; }
+.empty-state span { font-size: 3rem; display: block; margin-bottom: 1rem; }
+.empty-state h3 { margin: 0 0 .5rem; color: #0f172a; }
+.empty-state p { color: #64748b; margin: 0; font-size: .88rem; }
 
-/* Avatar */
+/* ── Pagination ───────────────────────────────── */
+.pagination { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1.25rem; border-top: 1px solid #f0f2f8; }
+.page-info { font-size: .8rem; color: #8a94b2; }
+.page-btns { display: flex; gap: .3rem; }
+.page-btns button { width: 30px; height: 30px; border-radius: 7px; border: 1.5px solid #e4e9f2; background: #fff; color: #475569; font-size: .8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+.page-btns button svg { width: 14px; height: 14px; }
+.page-btns button:hover:not(:disabled) { border-color: #2563eb; color: #2563eb; }
+.page-btns button:disabled { opacity: .4; cursor: not-allowed; }
+.page-btns button.current { background: #2563eb; border-color: #2563eb; color: #fff; }
 
-.cc-avatar{
-    position:absolute;
-    left:50%;
-    bottom:-42px;
-    transform:translateX(-50%);
-    width:85px;
-    height:85px;
-    border-radius:50%;
-    overflow:hidden;
-    border:5px solid #fff;
-    background:#eef2ff;
-    box-shadow:0 10px 20px rgba(0,0,0,.12);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:28px;
-    font-weight:700;
-    color:#4f46e5;
-}
+/* ── Cartes ────────────────────────────────────── */
+.client-cards { display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: 1rem; }
+.client-card { background: #fff; border-radius: 16px; border: 1px solid #e4e9f2; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.04); cursor: pointer; transition: box-shadow .2s; }
+.client-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,.06); }
+.cc-header { height: 50px; position: relative; padding: 0 1rem; }
+.cc-avatar { width: 54px; height: 54px; border-radius: 50%; border: 3px solid #fff; background: #eee; position: absolute; bottom: -24px; left: 1rem; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.1rem; font-weight: 700; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+.cc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.cc-body { padding: 2rem 1rem 1rem; display: flex; flex-direction: column; gap: .35rem; }
+.cc-body h4 { font-size: .95rem; font-weight: 700; color: #1e2a4a; margin: 0; }
+.cc-email { font-size: .78rem; margin: 0; }
+.cc-body .type-badge { align-self: flex-start; margin-top: .25rem; }
+.cc-actions { display: flex; gap: .5rem; justify-content: flex-end; margin-top: .75rem; border-top: 1px solid #f1f5f9; padding-top: .75rem; }
 
-.cc-avatar img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-}
-
-/* Status */
-
-.cc-status{
-    height:34px;
-    padding:0 15px;
-    border-radius:30px;
-    display:flex;
-    align-items:center;
-    font-size:13px;
-    font-weight:600;
-}
-
-.cc-status.active{
-    background:#dcfce7;
-    color:#15803d;
-}
-
-.cc-status.inactive{
-    background:#fee2e2;
-    color:#dc2626;
-}
-
-/* BODY */
-
-.cc-body{
-    padding:55px 22px 22px;
-}
-
-.cc-body h4{
-    margin:0;
-    text-align:center;
-    font-size:21px;
-    color:#1e293b;
-    font-weight:700;
-}
-
-.cc-email{
-    text-align:center;
-    color:#64748b;
-    font-size:14px;
-    margin:8px 0 18px;
-}
-
-/* Infos */
-
-.client-info{
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-    margin-bottom:20px;
-}
-
-.client-info div{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    color:#475569;
-    font-size:14px;
-}
-
-.client-info svg{
-    width:18px;
-    height:18px;
-    color:#6366f1;
-}
-
-/* Badge */
-
-.type-badge{
-    display:inline-flex;
-    margin:auto;
-    padding:8px 18px;
-    border-radius:30px;
-    font-size:13px;
-    font-weight:600;
-}
-
-.type-particulier{
-    background:#ede9fe;
-    color:#6d28d9;
-}
-
-.type-entreprise{
-    background:#dbeafe;
-    color:#1d4ed8;
-}
-
-/* Actions */
-
-.cc-actions{
-    display:flex;
-    justify-content:center;
-    gap:15px;
-    margin-top:22px;
-    padding-top:18px;
-    border-top:1px solid #edf2f7;
-}
-
-.action-btn{
-    width:46px;
-    height:46px;
-    border:none;
-    border-radius:14px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    cursor:pointer;
-    transition:.25s;
-}
-
-.action-btn svg{
-    width:20px;
-    height:20px;
-}
-
-.action-btn.edit{
-    background:#eef2ff;
-    color:#4f46e5;
-}
-
-.action-btn.edit:hover{
-    background:#4f46e5;
-    color:white;
-}
-
-.action-btn.delete{
-    background:#fef2f2;
-    color:#ef4444;
-}
-
-.action-btn.delete:hover{
-    background:#ef4444;
-    color:white;
+/* ── Responsive ───────────────────────────────── */
+@media (max-width: 768px) {
+  .clients-page { padding: 16px; margin: -16px; }
+  .page-header { flex-direction: row; align-items: center; justify-content: space-between; }
+  .stats-bar { gap: .4rem; }
+  .stat-pill { padding: .3rem .8rem; font-size: .75rem; }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .search-box { max-width: 100%; }
+  .toolbar-right { justify-content: space-between; }
+  
+  /* Masquage des colonnes secondaires de la table sur mobile */
+  .data-table th:nth-child(1), .data-table td:nth-child(1),
+  .data-table th:nth-child(4), .data-table td:nth-child(4),
+  .data-table th:nth-child(5), .data-table td:nth-child(5),
+  .data-table th:nth-child(7), .data-table td:nth-child(7) { display: none; }
+  
+  .form-row { flex-direction: column; gap: 1rem; }
+  .client-cards { grid-template-columns: 1fr; }
 }
 </style>
+
+```

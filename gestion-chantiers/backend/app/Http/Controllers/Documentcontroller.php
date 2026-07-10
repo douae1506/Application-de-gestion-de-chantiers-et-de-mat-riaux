@@ -14,7 +14,7 @@ class DocumentController extends Controller
         $validated = $request->validate([
             'nom'     => 'required|string|max:255',
             'type'    => 'required|string|max:100',
-            'fichier' => 'required|file|max:20480', // 20MB max
+            'fichier' => 'required|file|max:20480', 
         ]);
 
         $file = $request->file('fichier');

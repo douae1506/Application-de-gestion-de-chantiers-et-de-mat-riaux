@@ -8,29 +8,22 @@ use Illuminate\Http\Request;
 
 class ChantierController extends Controller
 {
-    // ─── Liste avec filtres ───────────────────────────────────
     public function index(Request $request)
     {
         $query = Chantier::with(['client', 'projets'])
             ->latest();
-
-        // Recherche textuelle
         if ($search = $request->get('search')) {
             $query->search($search);
         }
-
         // Filtre statut
         if ($statut = $request->get('statut')) {
             $query->where('statut', $statut);
         }
-
         // Filtre type
         if ($type = $request->get('type')) {
             $query->where('type', $type);
         }
-
         $chantiers = $query->get()->map(fn($c) => $this->formatChantier($c));
-
         return response()->json(['data' => $chantiers]);
     }
 
@@ -43,54 +36,46 @@ class ChantierController extends Controller
             'documents',
             'sortieStocks.produit',
         ]);
-
         return response()->json(['data' => $this->formatChantierDetail($chantier)]);
     }
 
     // ─── Création ─────────────────────────────────────────────
    public function store(Request $request)
-{
-    try {
-
-        $validated = $request->validate([
-            'client_id'       => 'required|exists:clients,id',
-            'nom'             => 'required|string|max:255',
-            'description'     => 'nullable|string',
-            'type'            => 'required|in:residentiel,commercial,industriel,public',
-            'adresse'         => 'required|string|max:500',
-            'ville'           => 'required|string|max:255',
-            'pays'            => 'nullable|string|max:100',
-            'code_postal'     => 'nullable|string|max:20',
-            'surface'         => 'nullable|numeric|min:0',
-            'budget_total'    => 'nullable|numeric|min:0',
-            'date_debut'      => 'required|date',
-            'date_fin_prevue' => 'nullable|date|after_or_equal:date_debut',
-            'architecte'      => 'nullable|string|max:255',
-            'observations'    => 'nullable|string',
-            'responsable_id'  => 'nullable|exists:users,id',
-            'latitude'        => 'nullable|numeric|between:-9000,9000',
-            'longitude'       => 'nullable|numeric|between:-9000,9000',
-        ]);
-
-        $validated['reference'] = Chantier::genererReference();
-        $validated['statut'] = 'planifie';
-        $validated['latitude'] = $validated['latitude'] ?? null;
-$validated['longitude'] = $validated['longitude'] ?? null;
-
-        $chantier = Chantier::create($validated);
-
-        return response()->json($chantier);
-
-    } catch (\Throwable $e) {
-
-        return response()->json([
-            'error' => $e->getMessage(),
-            'line'  => $e->getLine(),
-            'file'  => $e->getFile(),
-        ], 500);
+    {
+        try {
+            $validated = $request->validate([
+                'client_id'       => 'required|exists:clients,id',
+                'nom'             => 'required|string|max:255',
+                'description'     => 'nullable|string',
+                'type'            => 'required|in:residentiel,commercial,industriel,public',
+                'adresse'         => 'required|string|max:500',
+                'ville'           => 'required|string|max:255',
+                'pays'            => 'nullable|string|max:100',
+                'code_postal'     => 'nullable|string|max:20',
+                'surface'         => 'nullable|numeric|min:0',
+                'budget_total'    => 'nullable|numeric|min:0',
+                'date_debut'      => 'required|date',
+                'date_fin_prevue' => 'nullable|date|after_or_equal:date_debut',
+                'architecte'      => 'nullable|string|max:255',
+                'observations'    => 'nullable|string',
+                'responsable_id'  => 'nullable|exists:users,id',
+                'latitude'        => 'nullable|numeric|between:-9000,9000',
+                'longitude'       => 'nullable|numeric|between:-9000,9000',
+            ]);
+            $validated['reference'] = Chantier::genererReference();
+            $validated['statut'] = 'planifie';
+            $validated['latitude'] = $validated['latitude'] ?? null;
+            $validated['longitude'] = $validated['longitude'] ?? null;
+            $chantier = Chantier::create($validated);
+            return response()->json($chantier);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'line'  => $e->getLine(),
+                'file'  => $e->getFile(),
+            ], 500);
+        }
     }
-}
-
     // ─── Mise à jour ──────────────────────────────────────────
     public function update(Request $request, Chantier $chantier)
     {
@@ -116,10 +101,8 @@ $validated['longitude'] = $validated['longitude'] ?? null;
             'latitude'        => 'nullable|numeric|between:-9000,9000',
         'longitude'       => 'nullable|numeric|between:-9000,9000',
         ]);
-
         $chantier->update($validated);
         $chantier->load(['client', 'projets']);
-
         return response()->json([
             'success' => true,
             'message' => 'Chantier mis à jour',

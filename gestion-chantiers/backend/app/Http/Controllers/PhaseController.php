@@ -63,7 +63,7 @@ $this->updateProjectProgress($phase->projet_id);
         ]);
 
         $phase->update($validated);
-$this->updateProjectProgress($phase->projet_id);
+        $this->updateProjectProgress($phase->projet_id);
         return response()->json([
             'success' => true,
             'data'    => $phase,

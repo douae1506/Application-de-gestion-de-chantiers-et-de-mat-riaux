@@ -281,29 +281,83 @@
           </div>
         </div>
 
-        <!-- Calendrier -->
-        <div class="v-card">
+        <!-- Calendrier compact -->
+        <div class="v-card calendar-card">
           <div class="card-header flex-between">
             <h3 class="calendar-title-bold">{{ calendarMonthName }} {{ calendarYear }}</h3>
             <div class="calendar-nav-arrows">
-              <button class="arrow-btn" @click="calendarMonth--">‹</button>
-              <button class="arrow-btn" @click="calendarMonth++">›</button>
+              <button class="arrow-btn" @click="changeMonth(-1)">‹</button>
+              <button class="arrow-btn today-btn" @click="goToday">Aujourd'hui</button>
+              <button class="arrow-btn" @click="changeMonth(1)">›</button>
             </div>
           </div>
-          <div class="card-body">
-            <div class="calendar-wrapper">
+          <div class="card-body calendar-card-body">
+            <div class="calendar-wrapper compact">
               <div class="calendar-weekdays-row">
-                <div v-for="day in ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim']" :key="day">{{ day }}</div>
+                <div v-for="day in ['L','M','M','J','V','S','D']" :key="day">{{ day }}</div>
               </div>
               <div class="calendar-days-matrix">
-                <div
+                <button
                   v-for="day in calendarDays"
                   :key="day.date.toISOString()"
+                  type="button"
                   class="calendar-day-node"
-                  :class="{ 'is-inactive-month': !day.currentMonth, 'is-selected-today': day.isToday }"
+                  :class="{
+                    'is-inactive-month': !day.currentMonth,
+                    'is-today': day.isToday,
+                    'is-picked': isSameDay(day.date, selectedDate)
+                  }"
+                  @click="selectDay(day)"
                 >
-                  <span>{{ day.day }}</span>
-                </div>
+                  <span class="day-number">{{ day.day }}</span>
+                  <span class="day-dot-row" v-if="eventsByDate[dateKey(day.date)]?.length">
+                    <span
+                      v-for="(ev, i) in eventsByDate[dateKey(day.date)].slice(0, 3)"
+                      :key="i"
+                      class="day-dot"
+                      :style="{ background: typeColor(ev.type) }"
+                    ></span>
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Événements du jour sélectionné -->
+            <div class="selected-day-panel">
+              <div class="selected-day-header">
+                <span class="selected-day-label">{{ formatSelectedDate(selectedDate) }}</span>
+                <button class="add-event-btn" @click="openAddEvent">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  Événement
+                </button>
+              </div>
+
+              <div v-if="eventsLoading" class="events-loading">Chargement…</div>
+
+              <ul v-else-if="selectedDayEvents.length" class="selected-day-events">
+                <li v-for="ev in selectedDayEvents" :key="ev.id" class="mini-event-row">
+                  <span class="mini-event-dot" :style="{ background: typeColor(ev.type) }"></span>
+                  <div class="mini-event-info">
+                    <span class="mini-event-title">{{ ev.titre }}</span>
+                    <span class="mini-event-meta">
+                      <span v-if="ev.heure">{{ ev.heure }}</span>
+                      <span v-if="ev.chantier_nom"> · {{ ev.chantier_nom }}</span>
+                      <span v-else class="personal-tag">· Personnel</span>
+                    </span>
+                  </div>
+                  <button class="mini-event-delete" title="Supprimer" @click="deleteEvent(ev)">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                  </button>
+                </li>
+              </ul>
+
+              <p v-else class="no-events-text">Aucun événement ce jour-là.</p>
+
+              <div class="calendar-legend">
+                <span class="legend-chip"><span class="chip-dot" :style="{ background: typeColor('reunion') }"></span>Réunion</span>
+                <span class="legend-chip"><span class="chip-dot" :style="{ background: typeColor('livraison') }"></span>Livraison</span>
+                <span class="legend-chip"><span class="chip-dot" :style="{ background: typeColor('inspection') }"></span>Inspection</span>
+                <span class="legend-chip"><span class="chip-dot" :style="{ background: typeColor('autre') }"></span>Autre</span>
               </div>
             </div>
           </div>
@@ -337,11 +391,95 @@
       </section>
 
     </template>
+
+    <!-- ─── MODALE : Ajouter un événement ─── -->
+    <div v-if="showEventModal" class="modal-overlay" @click.self="closeAddEvent">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>Nouvel événement</h3>
+          <button class="modal-close" @click="closeAddEvent">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <form class="modal-form" @submit.prevent="submitEvent">
+          <div class="mode-toggle">
+            <button
+              type="button"
+              class="mode-btn"
+              :class="{ active: eventMode === 'chantier' }"
+              @click="eventMode = 'chantier'"
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M4 21V8l8-5 8 5v13M9 21v-6h6v6"/></svg>
+              Lié à un chantier
+            </button>
+            <button
+              type="button"
+              class="mode-btn"
+              :class="{ active: eventMode === 'personnel' }"
+              @click="eventMode = 'personnel'"
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
+              Personnel
+            </button>
+          </div>
+
+          <label class="field" v-if="eventMode === 'chantier'">
+            <span>Chantier</span>
+            <select v-model="eventForm.chantier_id" required>
+              <option value="" disabled>Sélectionner un chantier</option>
+              <option v-for="c in chantiersList" :key="c.id" :value="c.id">{{ c.nom }}</option>
+            </select>
+          </label>
+          <p v-else class="mode-hint">Visible uniquement par vous, sans rattachement à un chantier.</p>
+
+          <label class="field">
+            <span>Titre</span>
+            <input v-model="eventForm.titre" type="text" required maxlength="255" placeholder="Réunion de chantier" />
+          </label>
+
+          <div class="field-row">
+            <label class="field">
+              <span>Date</span>
+              <input v-model="eventForm.date" type="date" required />
+            </label>
+            <label class="field">
+              <span>Heure</span>
+              <input v-model="eventForm.heure" type="time" />
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Type</span>
+            <select v-model="eventForm.type" required>
+              <option value="reunion">Réunion</option>
+              <option value="livraison">Livraison</option>
+              <option value="inspection">Inspection</option>
+              <option value="autre">Autre</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Description</span>
+            <textarea v-model="eventForm.description" rows="3" placeholder="Détails (optionnel)"></textarea>
+          </label>
+
+          <p v-if="formError" class="form-error">{{ formError }}</p>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" @click="closeAddEvent">Annuler</button>
+            <button type="submit" class="btn-submit" :disabled="submitting">
+              {{ submitting ? 'Enregistrement…' : 'Ajouter l\'événement' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 
 // ─── États ──────────────────────────────────────────────
@@ -365,10 +503,11 @@ const stats = ref({
 // ─── Calendrier ──────────────────────────────────────────
 const calendarMonth = ref(new Date().getMonth())
 const calendarYear = ref(new Date().getFullYear())
+const selectedDate = ref(new Date())
 
 const calendarMonthName = computed(() => {
   const date = new Date(calendarYear.value, calendarMonth.value)
-  return date.toLocaleString('fr-FR', { month: 'long' }) // 'long' en minuscule ✅
+  return date.toLocaleString('fr-FR', { month: 'long' })
 })
 
 const calendarDays = computed(() => {
@@ -404,6 +543,178 @@ const calendarDays = computed(() => {
 
   return days
 })
+
+function changeMonth(delta) {
+  let m = calendarMonth.value + delta
+  let y = calendarYear.value
+  if (m < 0) { m = 11; y-- }
+  if (m > 11) { m = 0; y++ }
+  calendarMonth.value = m
+  calendarYear.value = y
+}
+
+function goToday() {
+  const now = new Date()
+  calendarMonth.value = now.getMonth()
+  calendarYear.value = now.getFullYear()
+  selectedDate.value = now
+}
+
+function isSameDay(a, b) {
+  return a.toDateString() === b.toDateString()
+}
+
+function selectDay(day) {
+  selectedDate.value = day.date
+  if (!day.currentMonth) {
+    calendarMonth.value = day.date.getMonth()
+    calendarYear.value = day.date.getFullYear()
+  }
+}
+
+function formatSelectedDate(date) {
+  return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+function dateKey(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+// ─── Événements ──────────────────────────────────────────
+// NOTE : ceci suppose l'existence d'une route agrégée `/admin/events` qui
+// retourne les événements de tous les chantiers (avec `chantier_nom`),
+// filtrable par mois/année. Si cette route n'existe pas encore côté API,
+// il suffit d'ajouter un contrôleur équivalent à EventController::index
+// mais sans le scope par chantier (ou de boucler sur les chantiers actifs).
+const events = ref([])
+const eventsLoading = ref(false)
+const chantiersList = ref([])
+
+const eventsByDate = computed(() => {
+  const map = {}
+  for (const ev of events.value) {
+    const key = ev.date?.slice(0, 10)
+    if (!key) continue
+    if (!map[key]) map[key] = []
+    map[key].push(ev)
+  }
+  return map
+})
+
+const selectedDayEvents = computed(() => {
+  return eventsByDate.value[dateKey(selectedDate.value)] || []
+})
+
+async function fetchEvents() {
+  eventsLoading.value = true
+  try {
+    const { data } = await api.get('/admin/events', {
+      params: { month: calendarMonth.value + 1, year: calendarYear.value }
+    })
+    events.value = data.data || []
+  } catch (e) {
+    console.error('Erreur chargement événements', e)
+    events.value = []
+  } finally {
+    eventsLoading.value = false
+  }
+}
+
+async function fetchChantiersList() {
+  try {
+    const { data } = await api.get('/admin/chantiers', { params: { per_page: 100 } })
+    chantiersList.value = data.data || []
+  } catch (e) {
+    console.error('Erreur chargement chantiers', e)
+    chantiersList.value = []
+  }
+}
+
+const typeColors = {
+  reunion: '#2563eb',
+  livraison: '#16a34a',
+  inspection: '#f59e0b',
+  autre: '#8b5cf6',
+}
+function typeColor(type) {
+  return typeColors[type] || '#94a3b8'
+}
+
+// ─── Modale d'ajout ──────────────────────────────────────
+const showEventModal = ref(false)
+const submitting = ref(false)
+const formError = ref('')
+const eventMode = ref('chantier') // 'chantier' | 'personnel'
+const eventForm = reactive({
+  chantier_id: '',
+  titre: '',
+  description: '',
+  date: '',
+  heure: '',
+  type: 'reunion',
+})
+
+function openAddEvent() {
+  formError.value = ''
+  eventMode.value = 'chantier'
+  eventForm.chantier_id = ''
+  eventForm.titre = ''
+  eventForm.description = ''
+  eventForm.date = dateKey(selectedDate.value)
+  eventForm.heure = ''
+  eventForm.type = 'reunion'
+  if (!chantiersList.value.length) fetchChantiersList()
+  showEventModal.value = true
+}
+
+function closeAddEvent() {
+  showEventModal.value = false
+}
+
+async function submitEvent() {
+  if (eventMode.value === 'chantier' && !eventForm.chantier_id) {
+    formError.value = 'Merci de choisir un chantier.'
+    return
+  }
+  submitting.value = true
+  formError.value = ''
+  try {
+    // Route globale : un événement "personnel" est envoyé sans chantier_id
+    // (l'API le rattache alors à l'utilisateur connecté). Voir la note API
+    // plus haut : /admin/events doit accepter chantier_id nullable.
+    await api.post('/admin/events', {
+      chantier_id: eventMode.value === 'chantier' ? eventForm.chantier_id : null,
+      titre: eventForm.titre,
+      description: eventForm.description || null,
+      date: eventForm.date,
+      heure: eventForm.heure || null,
+      type: eventForm.type,
+    })
+    showEventModal.value = false
+    await fetchEvents()
+  } catch (e) {
+    console.error('Erreur création événement', e)
+    formError.value = e?.response?.data?.message || "Impossible d'ajouter l'événement."
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function deleteEvent(ev) {
+  if (!confirm(`Supprimer "${ev.titre}" ?`)) return
+  try {
+    await api.delete(`/admin/events/${ev.id}`)
+    await fetchEvents()
+  } catch (e) {
+    console.error('Erreur suppression événement', e)
+    alert("Impossible de supprimer l'événement.")
+  }
+}
+
+watch([calendarMonth, calendarYear], fetchEvents)
 
 // ─── Helpers ─────────────────────────────────────────────
 function formatMAD(n) {
@@ -486,7 +797,10 @@ const dateRange = computed(() => {
 })
 
 // ─── Montage ──────────────────────────────────────────────
-onMounted(fetchDashboard)
+onMounted(() => {
+  fetchDashboard()
+  fetchEvents()
+})
 </script>
 
 <style scoped>
@@ -747,20 +1061,261 @@ onMounted(fetchDashboard)
 .task-relation { font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 0.15rem; }
 .task-deadline { font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
 
-/* CALENDRIER */
-.calendar-nav-arrows { display: flex; gap: 0.25rem; }
+/* ═══════════ CALENDRIER COMPACT ═══════════ */
+.calendar-card { max-width: 100%; }
+.calendar-card .card-header { background: linear-gradient(180deg, #fbfcfe 0%, #ffffff 100%); }
+.calendar-title-bold { text-transform: capitalize; letter-spacing: -0.01em; }
+.calendar-nav-arrows { display: flex; align-items: center; gap: 0.35rem; }
 .arrow-btn {
-  background: none; border: none; font-size: 1.25rem; color: #64748b; cursor: pointer; width: 24px; height: 24px;
+  background: #f8fafc; border: 1px solid #e2e8f0; font-size: 1rem; color: #64748b;
+  cursor: pointer; width: 24px; height: 24px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+  transition: all 0.15s;
 }
-.calendar-wrapper { width: 100%; }
-.calendar-weekdays-row { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 0.5rem; }
-.calendar-weekdays-row div { font-size: 0.75rem; font-weight: 600; color: #94a3b8; }
-.calendar-days-matrix { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.arrow-btn:hover { background: #eef2ff; border-color: #c7d2fe; color: #4f46e5; }
+.arrow-btn.today-btn {
+  width: auto; padding: 0 0.55rem; font-size: 0.66rem; font-weight: 700;
+  color: #4f46e5; text-transform: uppercase; letter-spacing: 0.03em;
+}
+.calendar-card-body { padding: 1rem 1.1rem 1.1rem; }
+.calendar-wrapper.compact { width:100%;
+    max-width:220px;
+    margin:auto;}
+
+.calendar-weekdays-row {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  text-align: center; margin-bottom: 0.4rem;
+}
+.calendar-weekdays-row div { font-size: 0.64rem; font-weight: 700; color: #b0b7c9; letter-spacing: 0.02em; }
+
+.calendar-days-matrix {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 3px; text-align: center;
+}
 .calendar-day-node {
-  aspect-ratio: 1.3; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 500; border-radius: 6px; color: #334155;
+  position:relative;
+    width:28px;
+    height:28px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:none;
+    border-radius:8px;
+    background:transparent;
+    cursor:pointer;
+    transition:.2s;
+    font-size:.72rem;
+    color:#475569;
+    padding:0;
 }
-.is-inactive-month { color: #cbd5e1; }
-.is-selected-today { background: #2563eb; color: white !important; font-weight: 600; }
+
+.calendar-day-node:hover { background: #f5f6fb; }
+.is-inactive-month { color: #d7dbe6; }
+.is-inactive-month:hover { background: transparent; }
+
+/* Aujourd'hui : discret, marqué par la couleur du texte + un point */
+.is-today .day-number { color: #4f46e5; font-weight: 800; }
+.is-today::after {
+  content: '';
+  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  width: 3px; height: 3px; border-radius: 50%; background: #4f46e5;
+}
+.is-today.is-picked::after { display: none; }
+.calendar-day-node:hover{
+    background:#f1f5f9;
+}
+
+.calendar-day-node .day-number{
+    font-weight:500;
+}
+
+.is-picked{
+    background:#2563eb;
+    color:#fff;
+}
+
+.is-picked .day-number{
+    color:white;
+    font-weight:700;
+}
+
+.is-today{
+    border:2px solid #2563eb;
+}
+
+.is-today.is-picked{
+    border:none;
+}
+/* Jour sélectionné : anneau doux, devient plein s'il est aussi "aujourd'hui" */
+.is-picked {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+.is-picked .day-number { color: #4338ca; font-weight: 700; }
+.is-picked.is-today {
+  background: #4f46e5; border-color: #4f46e5;
+}
+.is-picked.is-today .day-number { color: white; }
+
+.day-dot-row { display: flex; gap: 2px; height: 4px; }
+.day-dot { width: 4px; height: 4px; border-radius: 50%; }
+
+.selected-day-panel {
+  margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid #f1f5f9;
+}
+.selected-day-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.55rem;
+}
+.selected-day-label {
+  font-size: 0.76rem; font-weight: 700; color: #334155; text-transform: capitalize;
+}
+.add-event-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.7rem; font-weight: 700; color: #4f46e5;
+  background: #eef2ff; border: 1px solid #e0e7ff; border-radius: 7px;
+  padding: 0.28rem 0.6rem; cursor: pointer; transition: background 0.15s;
+}
+.add-event-btn:hover { background: #e0e7ff; }
+
+.selected-day-events { list-style: none; margin: 0 0 0.7rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.mini-event-row {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.45rem 0.55rem; border-radius: 8px; background: #f8fafc;
+  border: 1px solid #f1f5f9;
+}
+.mini-event-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.mini-event-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mini-event-title { font-size: 0.78rem; font-weight: 600; color: #0f172a; }
+.mini-event-meta { font-size: 0.68rem; color: #94a3b8; }
+.personal-tag { color: #8b5cf6; font-weight: 600; }
+.mini-event-delete {
+  background: none; border: none; color: #cbd5e1; cursor: pointer;
+  padding: 2px; display: flex; border-radius: 4px;
+}
+.mini-event-delete:hover { color: #dc2626; background: #fee2e2; }
+
+.no-events-text, .events-loading { font-size: 0.78rem; color: #94a3b8; padding: 0.3rem 0 0.7rem; }
+
+.calendar-legend {
+  display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem;
+  padding-top: 0.65rem; border-top: 1px dashed #f1f5f9;
+}
+.legend-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.68rem; color: #94a3b8; font-weight: 500;
+}
+.chip-dot { width: 6px; height: 6px; border-radius: 50%; }
+.day-dot-row{
+    position:absolute;
+    bottom:3px;
+    display:flex;
+    gap:2px;
+}
+
+.day-dot{
+    width:4px;
+    height:4px;
+    border-radius:50%;
+}
+.calendar-weekdays-row{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    margin-bottom:6px;
+}
+
+.calendar-weekdays-row div{
+    font-size:.63rem;
+    font-weight:700;
+    color:#94a3b8;
+}
+.calendar-days-matrix{
+    display:grid;
+    grid-template-columns:repeat(7,30px);
+    justify-content:center;
+    gap:4px;
+}
+.selected-day-panel{
+    margin-top:12px;
+    border-top:1px solid #eef2f7;
+    padding-top:10px;
+    max-height:170px;
+    overflow:auto;
+}
+.mini-event-row{
+    padding:8px;
+    border-radius:10px;
+    background:#f8fafc;
+    margin-bottom:6px;
+}
+
+.mini-event-title{
+    font-size:.73rem;
+}
+
+.mini-event-meta{
+    font-size:.65rem;
+}
+.calendar-card{
+    max-width:320px;
+    margin:auto;
+}
+
+.calendar-card-body{
+    padding:16px;
+}
+/* ═══════════ MODALE ÉVÉNEMENT ═══════════ */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; padding: 1rem;
+}
+.modal-box {
+  background: white; border-radius: 14px; width: 100%; max-width: 420px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem 1.25rem; border-bottom: 1px solid #f1f5f9;
+}
+.modal-header h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #0f172a; }
+.modal-close {
+  background: #f8fafc; border: none; width: 26px; height: 26px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center; color: #64748b; cursor: pointer;
+}
+.modal-close:hover { background: #f1f5f9; }
+.modal-form { padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.9rem; }
+.mode-toggle {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;
+  background: #f8fafc; padding: 0.3rem; border-radius: 10px; border: 1px solid #f1f5f9;
+}
+.mode-btn {
+  display: flex; align-items: center; justify-content: center; gap: 0.35rem;
+  font-family: inherit; font-size: 0.76rem; font-weight: 600; color: #64748b;
+  background: transparent; border: none; border-radius: 7px; padding: 0.5rem 0.4rem;
+  cursor: pointer; transition: all 0.15s;
+}
+.mode-btn:hover { color: #334155; }
+.mode-btn.active { background: white; color: #4338ca; box-shadow: 0 1px 3px rgba(15,23,42,0.08); }
+.mode-hint { font-size: 0.78rem; color: #94a3b8; margin: -0.3rem 0 0; }
+.field { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.8rem; font-weight: 600; color: #475569; }
+.field input, .field select, .field textarea {
+  font-family: inherit; font-size: 0.85rem; font-weight: 400; color: #0f172a;
+  border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.55rem 0.7rem; background: #f8fafc;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: #2563eb; background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.form-error { color: #dc2626; font-size: 0.8rem; margin: 0; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.25rem; }
+.btn-cancel, .btn-submit {
+  font-size: 0.82rem; font-weight: 600; padding: 0.55rem 1.1rem; border-radius: 8px; cursor: pointer; border: none;
+}
+.btn-cancel { background: #f1f5f9; color: #475569; }
+.btn-cancel:hover { background: #e2e8f0; }
+.btn-submit { background: #2563eb; color: white; }
+.btn-submit:hover { background: #1d4ed8; }
+.btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ACTIVITES */
 .activity-feed { display: flex; flex-direction: column; padding: 0.5rem 0; }
@@ -793,4 +1348,5 @@ onMounted(fetchDashboard)
   .page-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
   .date-picker-mock { width: 100%; justify-content: center; }
 }
+
 </style>

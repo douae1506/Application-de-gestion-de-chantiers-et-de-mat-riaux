@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProjectExpense extends Model
 {
-    protected $fillable = ['projet_id', 'nom', 'montant', 'date', 'description'];
+    protected $fillable = ['projet_id', 'sortie_stock_id', 'nom', 'montant', 'date', 'description'];
 
     public function projet()
     {

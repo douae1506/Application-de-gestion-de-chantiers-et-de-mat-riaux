@@ -285,7 +285,7 @@
                   <button 
                     v-if="!m.projet_id" 
                     class="btn btn-sm btn-primary" 
-                    @click="openAffecterModal(m.sortie_id)"
+                    @click="openAffecterModal(m.sortie_id, m.quantite)"
                   >
                     Affecter
                   </button>
@@ -583,11 +583,29 @@
         <!-- ====== ONGLET PRODUITS UTILISÉS (MATÉRIAUX) ====== -->
         <div v-else-if="activeTab === 'materiaux'" class="tab-content-alternative">
           <div class="materiaux-list">
-            <h2>Produits utilisés</h2>
+            <div class="card-header-flex materiaux-header-flex">
+              <h2 style="margin:0;">Produits utilisés</h2>
+              <button
+                v-if="selectableMateriaux.length"
+                class="btn btn-sm btn-danger"
+                :disabled="selectedMateriaux.length === 0"
+                @click="returnSelectionToStock"
+              >
+                Annuler la sélection ({{ selectedMateriaux.length }})
+              </button>
+            </div>
             <div v-if="chantier.materiaux?.length" class="materiaux-table">
               <table>
                 <thead>
                   <tr>
+                    <th style="width:2rem;">
+                      <input
+                        type="checkbox"
+                        :checked="allMateriauxSelected"
+                        :disabled="selectableMateriaux.length === 0"
+                        @change="toggleSelectAllMateriaux($event.target.checked)"
+                      />
+                    </th>
                     <th>Produit</th>
                     <th>Catégorie</th>
                     <th>Quantité</th>
@@ -598,7 +616,15 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="m in chantier.materiaux" :key="m.produit">
+                  <tr v-for="m in chantier.materiaux" :key="m.sortie_id">
+                    <td>
+                      <input
+                        v-if="!m.projet_id"
+                        type="checkbox"
+                        :value="m.sortie_id"
+                        v-model="selectedMateriaux"
+                      />
+                    </td>
                     <td>{{ m.produit }}</td>
                     <td>{{ m.categorie }}</td>
                     <td>{{ m.quantite }}</td>
@@ -617,7 +643,7 @@
                         <button 
                           v-if="!m.projet_id" 
                           class="btn btn-sm btn-primary" 
-                          @click="openAffecterModal(m.sortie_id)"
+                          @click="openAffecterModal(m.sortie_id, m.quantite)"
                         >
                           Affecter
                         </button>
@@ -690,6 +716,19 @@
                 {{ p.nom }} ({{ p.reference }})
               </option>
             </select>
+          </div>
+          <div class="form-group" style="margin-top:0.75rem;">
+            <label>Quantité à affecter *</label>
+            <input
+              v-model.number="affecterQuantite"
+              type="number"
+              min="1"
+              :max="affecterQuantiteMax"
+              class="form-input"
+            />
+            <small style="color:#64748b;font-size:.78rem;">
+              Disponible sur cette sortie : {{ affecterQuantiteMax }}. Vous pouvez affecter une partie seulement ; le reliquat reste non affecté.
+            </small>
           </div>
           <p v-if="affecterError" class="form-error">{{ affecterError }}</p>
         </div>
@@ -861,8 +900,21 @@ async function supprimerDocument(docId) {
 const showAffecterModal = ref(false)
 const affecterSortieId = ref(null)
 const affecterProjetId = ref('')
+const affecterQuantite = ref(1)
+const affecterQuantiteMax = ref(1)
 const affecterLoading = ref(false)
 const affecterError = ref('')
+
+// ─── Sélection multiple (annulation groupée) ────────────
+const selectedMateriaux = ref([])
+const selectableMateriaux = computed(() => (chantier.value?.materiaux || []).filter(m => !m.projet_id))
+const allMateriauxSelected = computed(() =>
+  selectableMateriaux.value.length > 0 &&
+  selectableMateriaux.value.every(m => selectedMateriaux.value.includes(m.sortie_id))
+)
+function toggleSelectAllMateriaux(checked) {
+  selectedMateriaux.value = checked ? selectableMateriaux.value.map(m => m.sortie_id) : []
+}
 
 async function returnToStock(sortieId) {
   if (!confirm('Voulez-vous vraiment retourner ce produit au stock ? Cette action est irréversible.')) return
@@ -874,9 +926,29 @@ async function returnToStock(sortieId) {
   }
 }
 
-function openAffecterModal(sortieId) {
+async function returnSelectionToStock() {
+  if (selectedMateriaux.value.length === 0) return
+  const n = selectedMateriaux.value.length
+  if (!confirm(`Voulez-vous vraiment retourner ${n} produit(s) au stock ? Cette action est irréversible.`)) return
+  try {
+    const { data } = await api.post('/admin/mouvements/sortie/retour-stock-bulk', {
+      sortie_ids: selectedMateriaux.value,
+    })
+    selectedMateriaux.value = []
+    await fetchChantier()
+    if (data.erreurs && data.erreurs.length) {
+      alert(data.erreurs.join('\n'))
+    }
+  } catch (e) {
+    alert(e.response?.data?.message || 'Erreur lors du retour au stock groupé.')
+  }
+}
+
+function openAffecterModal(sortieId, quantiteDisponible = 1) {
   affecterSortieId.value = sortieId
   affecterProjetId.value = ''
+  affecterQuantiteMax.value = quantiteDisponible
+  affecterQuantite.value = quantiteDisponible
   affecterError.value = ''
   showAffecterModal.value = true
 }
@@ -886,11 +958,20 @@ async function confirmAffecter() {
     affecterError.value = 'Veuillez sélectionner un projet.'
     return
   }
+  if (!affecterQuantite.value || affecterQuantite.value < 1) {
+    affecterError.value = 'Quantité invalide.'
+    return
+  }
+  if (affecterQuantite.value > affecterQuantiteMax.value) {
+    affecterError.value = `La quantité ne peut pas dépasser ${affecterQuantiteMax.value}.`
+    return
+  }
   affecterLoading.value = true
   affecterError.value = ''
   try {
     await api.put(`/admin/mouvements/sortie/${affecterSortieId.value}/affecter-projet`, {
-      projet_id: affecterProjetId.value
+      projet_id: affecterProjetId.value,
+      quantite: affecterQuantite.value,
     })
     showAffecterModal.value = false
     await fetchChantier()
@@ -2283,5 +2364,18 @@ watch(() => route.params.id, (newId) => {
   background: #f8fafc;
   font-weight: 600;
   color: #475569;
+}
+.materiaux-header-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.materiaux-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 }
 </style>

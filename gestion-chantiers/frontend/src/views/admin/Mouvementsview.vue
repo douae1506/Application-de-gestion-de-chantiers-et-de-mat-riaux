@@ -1,4 +1,3 @@
-```vue
 <template>
   <div class="mv-wrap">
 
@@ -153,30 +152,46 @@
               </select>
             </div>
 
-            <!-- Produit filtré selon fournisseur -->
+            <!-- Produits (multi-sélection) filtrés selon fournisseur -->
             <div class="form-group col-span-2">
-              <label>Produit / Référence *</label>
-              <select v-model="entreeForm.produit_id" class="form-input">
-                <option value="">-- Sélectionner un produit --</option>
-                <option v-if="produitsParFournisseur.length === 0" value="" disabled>Aucun produit associé</option>
-                <option v-for="p in produitsParFournisseur" :key="p.id" :value="p.id">
-                  {{ p.nom }} ({{ p.unite }}) - {{ fmtMAD(p.prix_unitaire) }}
-                </option>
-              </select>
+              <div class="lignes-header">
+                <label>Produits reçus *</label>
+                <button type="button" class="btn-add-ligne" @click="addEntreeLigne" :disabled="!entreeForm.fournisseur_id">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Ajouter un produit
+                </button>
+              </div>
+              <p v-if="!entreeForm.fournisseur_id" class="text-muted" style="font-size:.8rem;margin:.25rem 0;">Choisissez d'abord un fournisseur.</p>
+              <div v-else class="lignes-list">
+                <div v-for="(ligne, idx) in entreeForm.lignes" :key="idx" class="ligne-produit">
+                  <div>
+                    <span class="ligne-label">Produit</span>
+                    <select v-model="ligne.produit_id" class="form-input" @change="onEntreeProduitChange(idx)">
+                      <option value="">-- Sélectionner --</option>
+                      <option
+                        v-for="p in produitsDisponiblesPourLigne(idx)"
+                        :key="p.id" :value="p.id">
+                        {{ p.nom }} ({{ p.unite }})
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <span class="ligne-label">Quantité</span>
+                    <input v-model.number="ligne.quantite" type="number" min="1" class="form-input" />
+                  </div>
+                  <div>
+                    <span class="ligne-label">Prix unit. (MAD)</span>
+                    <input v-model.number="ligne.prix_unitaire" type="number" min="0" step="0.01" class="form-input" />
+                  </div>
+                  <div>
+                    <span class="ligne-label">Stock sécurité</span>
+                    <input v-model.number="ligne.stock_minimum" type="number" min="0" class="form-input" />
+                  </div>
+                  <button type="button" class="btn-remove-ligne" @click="removeEntreeLigne(idx)" :disabled="entreeForm.lignes.length === 1" title="Retirer ce produit">✕</button>
+                </div>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label>Quantité reçue *</label>
-              <input v-model.number="entreeForm.quantite" type="number" min="1" class="form-input" />
-            </div>
-            <div class="form-group">
-              <label>Prix unitaire (MAD)</label>
-              <input v-model.number="entreeForm.prix_unitaire" type="number" min="0" step="0.01" class="form-input" placeholder="0.00" />
-            </div>
-            <div class="form-group">
-              <label>Stock de sécurité (Alerte)</label>
-              <input v-model.number="entreeForm.stock_minimum" type="number" min="0" class="form-input" placeholder="0" />
-            </div>
             <div class="form-group">
               <label>Date de réception *</label>
               <input v-model="entreeForm.date_entree" type="date" class="form-input" />
@@ -292,17 +307,32 @@
               </select>
             </div>
             <div class="form-group col-span-2">
-              <label>Produit à transférer *</label>
-              <select v-model="transfertForm.produit_id" class="form-input" :disabled="!transfertForm.stock_source_id">
-                <option value="">-- Sélectionner l'article --</option>
-                <option v-for="p in transfertProduits" :key="p.id" :value="p.id">
-                  {{ p.nom }} (Disponible : {{ p.quantite }} {{ p.unite }})
-                </option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Quantité à déplacer *</label>
-              <input v-model.number="transfertForm.quantite" type="number" min="1" class="form-input" />
+              <div class="lignes-header">
+                <label>Produits à transférer *</label>
+                <button type="button" class="btn-add-ligne" @click="addTransfertLigne" :disabled="!transfertForm.stock_source_id">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Ajouter un produit
+                </button>
+              </div>
+              <p v-if="!transfertForm.stock_source_id" class="text-muted" style="font-size:.8rem;margin:.25rem 0;">Choisissez d'abord un dépôt source.</p>
+              <div v-else class="lignes-list">
+                <div v-for="(ligne, idx) in transfertForm.lignes" :key="idx" class="ligne-produit ligne-transfert">
+                  <div>
+                    <span class="ligne-label">Produit</span>
+                    <select v-model="ligne.produit_id" class="form-input">
+                      <option value="">-- Sélectionner l'article --</option>
+                      <option v-for="p in transfertProduitsDisponiblesPourLigne(idx)" :key="p.id" :value="p.id">
+                        {{ p.nom }} (Disponible : {{ p.quantite }} {{ p.unite }})
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <span class="ligne-label">Quantité</span>
+                    <input v-model.number="ligne.quantite" type="number" min="1" class="form-input" />
+                  </div>
+                  <button type="button" class="btn-remove-ligne" @click="removeTransfertLigne(idx)" :disabled="transfertForm.lignes.length === 1" title="Retirer ce produit">✕</button>
+                </div>
+              </div>
             </div>
             <div class="form-group">
               <label>Date effective *</label>
@@ -328,7 +358,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/services/api'
 
 // ─── Références ──────────────────────────────────────────────
@@ -362,13 +392,12 @@ const typeOptions = [
 const today = () => new Date().toISOString().split('T')[0]
 
 // ─── Formulaires ─────────────────────────────────────────────
+const nouvelleLigneEntree = () => ({ produit_id: '', quantite: 1, prix_unitaire: 0, stock_minimum: 0 })
+
 const entreeForm = reactive({
   stock_id: '',
   fournisseur_id: '',
-  produit_id: '',
-  quantite: 1,
-  prix_unitaire: 0,
-  stock_minimum: 0,
+  lignes: [nouvelleLigneEntree()],
   date_entree: today(),
   numero_facture: '',
   observations: '',
@@ -388,8 +417,7 @@ const sortieForm = reactive({
 const transfertForm = reactive({
   stock_source_id: '',
   stock_destination_id: '',
-  produit_id: '',
-  quantite: 1,
+  lignes: [{ produit_id: '', quantite: 1 }],
   date_transfert: today(),
   observations: '',
 })
@@ -428,6 +456,7 @@ async function loadStockProduits() {
 }
 
 async function loadStockProduitsTransfert() {
+  transfertForm.lignes = [{ produit_id: '', quantite: 1 }]
   if (!transfertForm.stock_source_id) { transfertProduits.value = []; return }
   try {
     const { data } = await api.get(`/admin/stocks/${transfertForm.stock_source_id}`)
@@ -438,17 +467,14 @@ async function loadStockProduitsTransfert() {
 }
 
 async function loadProduitsByFournisseur(fournisseurId) {
+  entreeForm.lignes = [nouvelleLigneEntree()]
   if (!fournisseurId) {
     produitsParFournisseur.value = []
-    entreeForm.produit_id = ''
-    entreeForm.prix_unitaire = 0
     return
   }
   try {
     const { data } = await api.get(`/admin/fournisseurs/${fournisseurId}/produits`)
     produitsParFournisseur.value = data.data
-    entreeForm.produit_id = ''
-    entreeForm.prix_unitaire = 0
   } catch (e) {
     produitsParFournisseur.value = []
     console.error('Erreur chargement produits du fournisseur', e)
@@ -467,44 +493,47 @@ async function loadProjets() {
   }
 }
 
-// ⭐ Nouvelle fonction : récupérer le stock minimum pour un produit dans un dépôt
-async function fetchStockMinimum() {
-  if (!entreeForm.stock_id || !entreeForm.produit_id) {
-    return
-  }
-  try {
-    const { data } = await api.get(`/admin/stocks/${entreeForm.stock_id}/produits/${entreeForm.produit_id}/pivot`)
-    entreeForm.stock_minimum = data.stock_minimum ?? 0
-  } catch (e) {
-    entreeForm.stock_minimum = 0
-    console.warn('Produit non trouvé dans ce dépôt ou erreur', e)
+// ─── Lignes produits (entrée) : multi-sélection ────────────────
+function addEntreeLigne() {
+  entreeForm.lignes.push(nouvelleLigneEntree())
+}
+function removeEntreeLigne(idx) {
+  if (entreeForm.lignes.length === 1) return
+  entreeForm.lignes.splice(idx, 1)
+}
+// Un même produit ne peut pas être choisi deux fois dans deux lignes différentes
+function produitsDisponiblesPourLigne(idx) {
+  const dejaChoisis = entreeForm.lignes.filter((l, i) => i !== idx).map(l => l.produit_id)
+  return produitsParFournisseur.value.filter(p => !dejaChoisis.includes(p.id))
+}
+// Préremplir le prix unitaire et récupérer le stock minimum lors du choix du produit
+async function onEntreeProduitChange(idx) {
+  const ligne = entreeForm.lignes[idx]
+  if (!ligne.produit_id) { ligne.prix_unitaire = 0; ligne.stock_minimum = 0; return }
+  const produit = produitsParFournisseur.value.find(p => p.id === ligne.produit_id)
+  if (produit) ligne.prix_unitaire = produit.prix_unitaire
+  if (entreeForm.stock_id) {
+    try {
+      const { data } = await api.get(`/admin/stocks/${entreeForm.stock_id}/produits/${ligne.produit_id}/pivot`)
+      ligne.stock_minimum = data.stock_minimum ?? 0
+    } catch {
+      ligne.stock_minimum = 0
+    }
   }
 }
 
-// ─── Watchers ─────────────────────────────────────────────────
-// Préremplir le prix unitaire lorsque le produit est sélectionné
-watch(() => entreeForm.produit_id, (newId) => {
-  if (!newId) {
-    entreeForm.prix_unitaire = 0
-    return
-  }
-  const produit = produitsParFournisseur.value.find(p => p.id === newId)
-  if (produit) {
-    entreeForm.prix_unitaire = produit.prix_unitaire
-  }
-})
-
-// ⭐ Watcher combiné pour récupérer le stock minimum
-watch(
-  () => [entreeForm.stock_id, entreeForm.produit_id],
-  ([newStock, newProduit]) => {
-    if (newStock && newProduit) {
-      fetchStockMinimum()
-    } else {
-      entreeForm.stock_minimum = 0
-    }
-  }
-)
+// ─── Lignes produits (transfert) : multi-sélection ─────────────
+function addTransfertLigne() {
+  transfertForm.lignes.push({ produit_id: '', quantite: 1 })
+}
+function removeTransfertLigne(idx) {
+  if (transfertForm.lignes.length === 1) return
+  transfertForm.lignes.splice(idx, 1)
+}
+function transfertProduitsDisponiblesPourLigne(idx) {
+  const dejaChoisis = transfertForm.lignes.filter((l, i) => i !== idx).map(l => l.produit_id)
+  return transfertProduits.value.filter(p => !dejaChoisis.includes(p.id))
+}
 
 // ─── Gestion des modals ──────────────────────────────────────
 function openModal(type) {
@@ -513,10 +542,7 @@ function openModal(type) {
     Object.assign(entreeForm, {
       stock_id: '',
       fournisseur_id: '',
-      produit_id: '',
-      quantite: 1,
-      prix_unitaire: 0,
-      stock_minimum: 0,
+      lignes: [nouvelleLigneEntree()],
       date_entree: today(),
       numero_facture: '',
       observations: '',
@@ -540,8 +566,7 @@ function openModal(type) {
     Object.assign(transfertForm, {
       stock_source_id: '',
       stock_destination_id: '',
-      produit_id: '',
-      quantite: 1,
+      lignes: [{ produit_id: '', quantite: 1 }],
       date_transfert: today(),
       observations: '',
     })
@@ -556,8 +581,8 @@ async function saveEntree() {
   modalError.value = ''
   if (!entreeForm.stock_id) { modalError.value = 'Sélectionnez un dépôt.'; return }
   if (!entreeForm.fournisseur_id) { modalError.value = 'Sélectionnez un fournisseur.'; return }
-  if (!entreeForm.produit_id) { modalError.value = 'Sélectionnez un produit.'; return }
-  if (!entreeForm.quantite || entreeForm.quantite < 1) { modalError.value = 'Quantité invalide.'; return }
+  if (entreeForm.lignes.some(l => !l.produit_id)) { modalError.value = 'Sélectionnez un produit pour chaque ligne.'; return }
+  if (entreeForm.lignes.some(l => !l.quantite || l.quantite < 1)) { modalError.value = 'Quantité invalide sur une des lignes.'; return }
   saving.value = true
   try {
     await api.post('/admin/mouvements/entree', entreeForm)
@@ -591,8 +616,8 @@ async function saveSortie() {
 async function saveTransfert() {
   modalError.value = ''
   if (!transfertForm.stock_source_id || !transfertForm.stock_destination_id) { modalError.value = 'Sélectionnez les deux dépôts.'; return }
-  if (!transfertForm.produit_id) { modalError.value = 'Sélectionnez un produit.'; return }
-  if (!transfertForm.quantite || transfertForm.quantite < 1) { modalError.value = 'Quantité invalide.'; return }
+  if (transfertForm.lignes.some(l => !l.produit_id)) { modalError.value = 'Sélectionnez un produit pour chaque ligne.'; return }
+  if (transfertForm.lignes.some(l => !l.quantite || l.quantite < 1)) { modalError.value = 'Quantité invalide sur une des lignes.'; return }
   saving.value = true
   try {
     await api.post('/admin/mouvements/transfert', transfertForm)
@@ -727,5 +752,18 @@ onMounted(async () => {
 .form-error { color: #e11d48; font-size: .82rem; margin-top: .5rem; font-weight: 500; }
 
 @media (max-width: 768px) { .stat-grid { grid-template-columns: 1fr 1fr; } .form-grid { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; } }
+
+/* ─── Lignes produits multi-sélection (entrée / transfert) ─── */
+.lignes-header { display: flex; justify-content: space-between; align-items: center; margin: .25rem 0 .5rem; }
+.lignes-header label { font-size: .82rem; font-weight: 600; color: #475569; }
+.btn-add-ligne { display: inline-flex; align-items: center; gap: .3rem; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; border-radius: 6px; padding: .35rem .7rem; font-size: .8rem; font-weight: 600; cursor: pointer; }
+.btn-add-ligne:hover { background: #dbeafe; }
+.lignes-list { display: flex; flex-direction: column; gap: .6rem; margin-bottom: .5rem; }
+.ligne-produit { display: grid; grid-template-columns: minmax(0,2.1fr) minmax(0,0.9fr) minmax(0,0.9fr) minmax(0,0.9fr) auto; gap: .5rem; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: .6rem; }
+.ligne-produit.ligne-transfert { grid-template-columns: minmax(0,2.4fr) minmax(0,1fr) auto; }
+.ligne-produit .form-input { background: #fff; }
+.btn-remove-ligne { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 6px; border: 1px solid #fecdd3; background: #fff1f2; color: #e11d48; cursor: pointer; flex-shrink: 0; }
+.btn-remove-ligne:hover { background: #ffe4e6; }
+.btn-remove-ligne:disabled { opacity: .35; cursor: not-allowed; }
+.ligne-label { font-size: .68rem; color: #94a3b8; display: block; margin-bottom: 2px; }
 </style>
-```

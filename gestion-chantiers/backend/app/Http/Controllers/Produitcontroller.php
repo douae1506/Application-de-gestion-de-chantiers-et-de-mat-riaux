@@ -139,8 +139,10 @@ class ProduitController extends Controller
             'alerte_stock'  => $alerte,
             'created_at'    => $p->created_at?->format('d/m/Y'),
             'fournisseurs'  => $p->fournisseurs->map(fn ($f) => [
-                'id'   => $f->id,
-                'nom'  => $f->nom,
+                'id'        => $f->id,
+                'nom'       => $f->nom,
+                'telephone' => $f->telephone,
+                'email'     => $f->email,
             ])->values()->toArray(),
             'depots'        => $p->stocks->map(fn ($s) => [
                 'id'       => $s->id,

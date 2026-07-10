@@ -140,6 +140,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('mouvements/sortie', [MouvementController::class, 'sortie']);
             Route::put('/mouvements/sortie/{sortie}/affecter-projet', [MouvementController::class, 'affecterSortieAProjet']);
             Route::post('/mouvements/sortie/{sortie}/retour-stock',   [MouvementController::class, 'retourStock']);
+            Route::post('/mouvements/sortie/retour-stock-bulk',       [MouvementController::class, 'retourStockBulk']);
         });
         Route::middleware('permission:create_transfert')->post('mouvements/transfert', [MouvementController::class, 'transfert']);
         Route::middleware('permission:delete_mouvement')->delete('mouvements/{mouvement}', [MouvementController::class, 'destroy']);
@@ -150,7 +151,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('rapports/mouvements',   [RapportController::class, 'mouvements']);
             Route::get('rapports/chantiers',    [RapportController::class, 'chantiers']);
         });
-
+Route::middleware('permission:view_evenements')->get(
+    '/events',
+    [EventController::class, 'all']
+);
+Route::middleware('permission:create_evenements')->post(
+    '/events',
+    [EventController::class, 'storeGlobal']
+);
         // Événements d'un chantier
         Route::middleware('permission:view_evenements')->group(function () {
             Route::get('/chantiers/{chantier}/events',            [EventController::class, 'index']);

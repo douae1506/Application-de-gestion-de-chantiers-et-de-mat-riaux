@@ -106,7 +106,14 @@
               <td>
                 <div v-if="p.fournisseurs && p.fournisseurs.length" class="fournisseurs-list">
                   <span v-for="f in p.fournisseurs.slice(0,2)" :key="f.id" class="fournisseur-tag">{{ f.nom }}</span>
-                  <span v-if="p.fournisseurs.length > 2" class="fournisseur-tag count">+{{ p.fournisseurs.length - 2 }}</span>
+                  <span
+                    v-if="p.fournisseurs.length > 2"
+                    class="fournisseur-tag count"
+                    role="button"
+                    tabindex="0"
+                    @click="openFournisseursPopover(p)"
+                    @keyup.enter="openFournisseursPopover(p)"
+                  >+{{ p.fournisseurs.length - 2 }}</span>
                 </div>
                 <span v-else class="text-muted">—</span>
               </td>
@@ -205,6 +212,27 @@
       </div>
     </div>
 
+    <div v-if="showFournisseursModal" class="modal-overlay" @click.self="showFournisseursModal = false">
+      <div class="modal-box fournisseurs-modal">
+        <div class="modal-header">
+          <h3>Fournisseurs de {{ fournisseursModalProduit?.nom }}</h3>
+          <button class="modal-close" @click="showFournisseursModal = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <ul class="fournisseurs-full-list">
+            <li v-for="f in fournisseursModalProduit?.fournisseurs" :key="f.id">
+              <span class="fournisseur-full-nom">{{ f.nom }}</span>
+              <span v-if="f.telephone" class="fournisseur-full-meta">{{ f.telephone }}</span>
+              <span v-if="f.email" class="fournisseur-full-meta">{{ f.email }}</span>
+            </li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showFournisseursModal = false">Fermer</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -224,6 +252,14 @@ const showModal = ref(false)
 const editMode = ref(false)
 const editId = ref(null)
 const formError = ref('')
+
+// ─── Popover "voir tous les fournisseurs" ─────────────────────
+const showFournisseursModal = ref(false)
+const fournisseursModalProduit = ref(null)
+function openFournisseursPopover(produit) {
+  fournisseursModalProduit.value = produit
+  showFournisseursModal.value = true
+}
 
 const form = reactive({
   nom: '',
@@ -403,7 +439,15 @@ onMounted(async () => {
 
 .fournisseurs-list { display: flex; flex-wrap: wrap; gap: 4px; max-width: 220px; }
 .fournisseur-tag { background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 6px; font-size: .75rem; font-weight: 500; white-space: nowrap; border: 1px solid #e2e8f0; }
-.fournisseur-tag.count { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-weight: 600; }
+.fournisseur-tag.count { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-weight: 600; cursor: pointer; }
+.fournisseur-tag.count:hover { background: #bae6fd; }
+.fournisseur-tag.count:focus-visible { outline: 2px solid #0369a1; outline-offset: 1px; }
+
+.fournisseurs-modal { width: 420px; }
+.fournisseurs-full-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .6rem; }
+.fournisseurs-full-list li { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .6rem .75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+.fournisseur-full-nom { font-weight: 600; color: #0f172a; font-size: .88rem; }
+.fournisseur-full-meta { font-size: .78rem; color: #64748b; }
 
 /* Modernisation Boutons Actions */
 .action-btns { display: flex; gap: .5rem; justify-content: flex-end; }

@@ -24,7 +24,7 @@ class Client extends Model
     ];
 
     public function chantiers()
-{
+    {
     return $this->hasMany(Chantier::class);
-}
+    }
 }

@@ -20,6 +20,14 @@
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14M7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
           Transfert
         </button>
+        <ExportToolbar
+          :pdf-url="exportPdfUrl"
+          :pdf-params="exportParams"
+          :pdf-filename="exportFilename"
+          :excel-columns="excelColumns"
+          :excel-rows="mouvements"
+          :excel-filename="exportFilename"
+        />
       </div>
     </div>
 
@@ -73,6 +81,7 @@
               <th>Affectation / Provenance</th>
               <th>Valeur</th>
               <th>Références & Mémos</th>
+              <th class="col-print">Bon</th>
             </tr>
           </thead>
           <tbody>
@@ -112,6 +121,11 @@
                   <span v-if="m.numero_facture" class="facture-tag">Réf : {{ m.numero_facture }}</span>
                   <span v-if="m.observations" class="obs-text">{{ m.observations }}</span>
                 </div>
+              </td>
+              <td class="col-print">
+                <button type="button" class="btn-print-row" title="Imprimer le bon" @click="printBon(m)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                </button>
               </td>
             </tr>
           </tbody>
@@ -360,6 +374,10 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import ExportToolbar from '@/components/ExportToolbar.vue'
+import { usePdfExport } from '@/composables/usePdfExport'
+
+const { printPdf } = usePdfExport()
 
 // ─── Références ──────────────────────────────────────────────
 const mouvements = ref([])
@@ -388,6 +406,46 @@ const typeOptions = [
   { val: 'sortie', label: 'Sorties' },
   { val: 'transfert', label: 'Transferts' },
 ]
+
+// ─── Export / Impression ───────────────────────────────────────
+// L'export PDF backend est ventilé par type (entrees/sorties/transferts) ;
+// par défaut (onglet "Tous les flux") on exporte les entrées.
+const exportPdfUrl = computed(() => `/admin/exports/${filtreType.value || 'entree'}s`)
+const exportFilename = computed(() => {
+  const labels = { entree: 'entrees', sortie: 'sorties', transfert: 'transferts' }
+  return labels[filtreType.value] || 'mouvements'
+})
+const exportParams = computed(() => ({
+  stock_id: filtreStock.value || undefined,
+  date_debut: dateDebut.value || undefined,
+  date_fin: dateFin.value || undefined,
+}))
+const excelColumns = [
+  { key: 'date_label', label: 'Date' },
+  { key: 'type_label', label: 'Type' },
+  { key: 'produit', label: 'Produit' },
+  { key: 'quantite', label: 'Quantité' },
+  { key: 'unite', label: 'Unité' },
+  { key: 'depot', label: 'Dépôt', value: (r) => r.depot || r.depot_source || '—' },
+  { key: 'depot_destination', label: 'Dépôt destination', value: (r) => r.depot_destination || '—' },
+  { key: 'fournisseur', label: 'Fournisseur / Bénéficiaire', value: (r) => r.fournisseur || r.beneficiaire || '—' },
+  { key: 'chantier', label: 'Chantier', value: (r) => r.chantier || '—' },
+  { key: 'valeur', label: 'Valeur (DH)' },
+  { key: 'observations', label: 'Observations', value: (r) => r.observations || '' },
+]
+
+function printBon(m) {
+  // m.id ressemble à "entree-123" / "sortie-45" / "transfert-7"
+  const realId = String(m.id).split('-').pop()
+  const routes = {
+    entree: `/admin/print/bon-entree/${realId}`,
+    sortie: `/admin/print/bon-sortie/${realId}`,
+    transfert: `/admin/print/bon-transfert/${realId}`,
+  }
+  const url = routes[m.type]
+  if (!url) return
+  printPdf(url)
+}
 
 const today = () => new Date().toISOString().split('T')[0]
 
@@ -766,4 +824,19 @@ onMounted(async () => {
 .btn-remove-ligne:hover { background: #ffe4e6; }
 .btn-remove-ligne:disabled { opacity: .35; cursor: not-allowed; }
 .ligne-label { font-size: .68rem; color: #94a3b8; display: block; margin-bottom: 2px; }
+.col-print { text-align: center; width: 44px; }
+.btn-print-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #e7ecf3;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-print-row:hover { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
 </style>

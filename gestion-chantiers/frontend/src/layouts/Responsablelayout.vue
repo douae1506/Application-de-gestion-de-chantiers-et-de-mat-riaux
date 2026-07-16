@@ -74,6 +74,7 @@
           </div>
         </div>
         <div class="topbar-right">
+          <NotificationBell />
           <div class="topbar-avatar" title="Mon profil">{{ initials }}</div>
         </div>
       </header>
@@ -89,6 +90,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import NotificationBell from '@/components/NotificationBell.vue'
 
 const auth   = useAuthStore()
 const router = useRouter()
@@ -230,6 +232,14 @@ async function handleLogout() {
 .breadcrumb-separator { width: 12px; height: 12px; color: var(--text-muted); opacity: 0.8; }
 .breadcrumb-current { font-weight: 600; color: var(--text-main); }
 .topbar-right { display: flex; align-items: center; gap: 1rem; }
+.topbar-icon-btn {
+  width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--border-color);
+  background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); position: relative; transition: all 0.15s;
+}
+.topbar-icon-btn:hover { background: var(--primary-cyan); color: var(--primary-blue); border-color: var(--primary-blue); }
+.topbar-icon-btn svg { width: 18px; height: 18px; }
+
 .topbar-avatar { width: 36px; height: 36px; border-radius: 8px; background: var(--primary-cyan); color: var(--primary-blue); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
 .topbar-avatar:hover { background: var(--primary-blue); color: #fff; }
 

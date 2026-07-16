@@ -1,8 +1,3 @@
-Voici le code complet corrigé et optimisé.
-
-Les modifications principales portent sur la fixation de la taille du SVG à l'intérieur du bouton (qui n'avait pas de dimensions par défaut et pouvait s'étirer) et l'ajustement du comportement Flexbox dans `.page-header` pour éviter que le bouton ne s'étire sur toute la hauteur ou toute la largeur en mode responsive.
-
-```vue
 <template>
   <div class="projects-page">
 
@@ -11,10 +6,20 @@ Les modifications principales portent sur la fixation de la taille du SVG à l'i
         <h1>Gestion des projets</h1>
         <p>{{ filteredProjects.length }} projet{{ filteredProjects.length > 1 ? 's' : '' }} trouvé{{ filteredProjects.length > 1 ? 's' : '' }}</p>
       </div>
-      <button class="btn btn-primary" @click="openCreateProject">
-        <svg viewBox="0 0 20 20" fill="currentColor" class="btn-icon-svg"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
-        Ajouter un projet
-      </button>
+      <div class="page-header-actions">
+        <button class="btn btn-primary" @click="openCreateProject">
+          <svg viewBox="0 0 20 20" fill="currentColor" class="btn-icon-svg"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+          Ajouter un projet
+        </button>
+        <ExportToolbar
+          pdf-url="/admin/exports/projets"
+          :pdf-params="{ search, statut: filterStatus }"
+          pdf-filename="projets"
+          :excel-columns="excelColumns"
+          :excel-rows="filteredProjects"
+          excel-filename="projets"
+        />
+      </div>
     </div>
 
     <div class="stats-bar">
@@ -98,7 +103,7 @@ Les modifications principales portent sur la fixation de la taille du SVG à l'i
               <td><strong class="text-blue">{{ formatMAD(p.cout_reel) }}</strong></td>
               <td>
                 <div class="action-btns">
-                  <button class="btn-action edit" @click.stop="goToProject(p.id)" title="Modifier">
+                  <button class="btn-action edit" @click.stop="goToEditProject(p.id)" title="Modifier">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                   </button>
                   <button class="btn-action delete" @click.stop="confirmDelete(p)" title="Supprimer">
@@ -155,7 +160,7 @@ Les modifications principales portent sur la fixation de la taille du SVG à l'i
             <span class="pc-cout-reel">Coût réel: {{ formatMAD(p.cout_reel) }}</span>
           </div>
           <div class="pc-actions">
-            <button class="btn-action edit" @click.stop="goToProject(p.id)">
+            <button class="btn-action edit" @click.stop="goToEditProject(p.id)">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
             </button>
             <button class="btn-action delete" @click.stop="confirmDelete(p)">
@@ -191,6 +196,19 @@ Les modifications principales portent sur la fixation de la taille du SVG à l'i
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import projetService from '@/services/projetService'
+import ExportToolbar from '@/components/ExportToolbar.vue'
+
+const excelColumns = [
+  { key: 'reference', label: 'Référence', value: (r) => r.reference || '—' },
+  { key: 'nom', label: 'Nom' },
+  { key: 'chantier', label: 'Chantier', value: (r) => r.chantier?.nom || r.chantier_nom || '—' },
+  { key: 'categorie', label: 'Catégorie', value: (r) => r.categorie || '—' },
+  { key: 'statut', label: 'Statut' },
+  { key: 'priorite', label: 'Priorité', value: (r) => r.priorite || '—' },
+  { key: 'progression', label: 'Progression (%)' },
+  { key: 'budget', label: 'Budget (DH)' },
+  { key: 'cout_reel', label: 'Coût réel (DH)' },
+]
 
 const router = useRouter()
 
@@ -252,6 +270,10 @@ const countByStatus = (status) => projects.value.filter(p => p.statut === status
 // ─── Navigation ────────────────────────────────────────
 function goToProject(id) {
   router.push({ name: 'projet-detail', params: { id } })
+}
+
+function goToEditProject(id) {
+  router.push({ name: 'projet-edit', params: { id } })
 }
 
 function goToChantier(id) {
@@ -321,6 +343,7 @@ onMounted(() => {
   gap: 1rem; 
   flex-wrap: wrap; 
 }
+.page-header-actions { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
 .page-header h1 { font-size: 1.4rem; font-weight: 700; color: #1e2a4a; margin: 0 0 .2rem; }
 .page-header p { font-size: .875rem; color: #8a94b2; margin: 0; }
 
@@ -491,5 +514,3 @@ onMounted(() => {
   .project-cards { grid-template-columns: 1fr; }
 }
 </style>
-
-```

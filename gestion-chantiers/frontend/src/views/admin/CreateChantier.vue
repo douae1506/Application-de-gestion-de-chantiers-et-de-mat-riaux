@@ -1,5 +1,3 @@
-
-```vue
 <template>
   <div class="create-page">
     <div class="page-header">
@@ -255,7 +253,7 @@ async function saveChantier() {
   try {
     const payload = { ...form}
     await chantierService.createChantier(payload)
-    router.push('/chantiers')
+    router.push({ name: 'AdminChantiers' })
   } catch (error) {
     console.log(error.response)
     console.log(error.response?.data)
@@ -638,5 +636,3 @@ textarea.form-control {
   to { transform: rotate(360deg); }
 }
 </style>
-
-```

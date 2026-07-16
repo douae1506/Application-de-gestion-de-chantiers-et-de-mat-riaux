@@ -6,10 +6,54 @@
         <h1>Gestion des Stocks</h1>
         <p>Gérez vos dépôts et visualisez le stock par emplacement</p>
       </div>
-      <button class="btn btn-primary" @click="openCreateDepot">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        Nouveau dépôt
-      </button>
+      <div class="sv-header-actions">
+        <button class="btn btn-primary" @click="openCreateDepot">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Nouveau dépôt
+        </button>
+        <button class="btn btn-outline" @click="showCustomPrint = true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Liste stock personnalisée
+        </button>
+        <ExportToolbar
+          pdf-url="/admin/exports/stocks"
+          :pdf-params="{}"
+          pdf-filename="stocks"
+          :excel-columns="excelColumns"
+          :excel-rows="flatStockLines"
+          excel-filename="stocks"
+        />
+      </div>
+    </div>
+
+    <!-- ─── MODAL IMPRESSION PERSONNALISÉE ─── -->
+    <div v-if="showCustomPrint" class="modal-overlay" @click.self="showCustomPrint = false">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>Liste de stock personnalisée</h3>
+          <button class="modal-close" @click="showCustomPrint = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted" style="font-size:.85rem; margin-bottom:.75rem;">Choisissez les colonnes à inclure sur le document imprimé.</p>
+          <div class="custom-print-columns">
+            <label v-for="col in customPrintColumnOptions" :key="col.key" class="checkbox-pill">
+              <input type="checkbox" :value="col.key" v-model="customPrintColumns" />
+              {{ col.label }}
+            </label>
+          </div>
+          <div class="form-group" style="margin-top:1rem;">
+            <label>Dépôt (optionnel)</label>
+            <select v-model="customPrintStockId" class="form-input">
+              <option value="">Tous les dépôts</option>
+              <option v-for="s in stocks" :key="s.id" :value="s.id">{{ s.nom }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showCustomPrint = false">Annuler</button>
+          <button class="btn btn-primary" :disabled="!customPrintColumns.length" @click="launchCustomPrint">Imprimer</button>
+        </div>
+      </div>
     </div>
 
     <div class="stat-grid">
@@ -296,6 +340,66 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import ExportToolbar from '@/components/ExportToolbar.vue'
+import { usePdfExport } from '@/composables/usePdfExport'
+
+const { printPdf } = usePdfExport()
+
+// ─── Export / Impression ───────────────────────────────────────
+const excelColumns = [
+  { key: 'produit', label: 'Produit' },
+  { key: 'categorie', label: 'Catégorie' },
+  { key: 'depot', label: 'Dépôt' },
+  { key: 'quantite', label: 'Quantité' },
+  { key: 'unite', label: 'Unité' },
+  { key: 'seuil', label: 'Seuil minimum' },
+  { key: 'valeur', label: 'Valeur (DH)' },
+  { key: 'statut', label: 'État', value: (r) => (r.quantite <= r.seuil ? 'Sous seuil' : 'OK') },
+]
+
+// Aplati la matrice produits × dépôts en lignes simples pour l'export Excel
+const flatStockLines = computed(() => {
+  const lines = []
+  for (const p of produits.value) {
+    for (const s of stocks.value) {
+      const qte = getQteForDepot(p, s.id)
+      lines.push({
+        produit: p.nom,
+        categorie: p.categorie,
+        depot: s.nom,
+        quantite: qte,
+        unite: p.unite,
+        seuil: getStockMinForDepot(p, s.id) || 0,
+        valeur: qte * (p.prix_unitaire || 0),
+      })
+    }
+  }
+  return lines
+})
+
+const showCustomPrint = ref(false)
+const customPrintStockId = ref('')
+const customPrintColumnOptions = [
+  { key: 'produit', label: 'Produit' },
+  { key: 'categorie', label: 'Catégorie' },
+  { key: 'depot', label: 'Dépôt' },
+  { key: 'emplacement', label: 'Emplacement' },
+  { key: 'quantite', label: 'Quantité' },
+  { key: 'seuil', label: 'Seuil min.' },
+  { key: 'prix', label: 'Prix unitaire' },
+  { key: 'valeur', label: 'Valeur' },
+  { key: 'etat', label: 'État' },
+]
+const customPrintColumns = ref(['produit', 'depot', 'quantite', 'seuil', 'etat'])
+
+async function launchCustomPrint() {
+  showCustomPrint.value = false
+  await printPdf('/admin/print/stock-personnalise', {
+    columns: customPrintColumns.value,
+    stock_ids: customPrintStockId.value ? [customPrintStockId.value] : [],
+  })
+}
+
 
 const stocks = ref([])
 const produits = ref([])
@@ -442,6 +546,21 @@ onMounted(async () => { await fetchStocks(); await fetchProduits() })
 <style scoped>
 .sv-wrap { min-height: 100vh; background: #f4f7fc; margin: -42px !important; padding: 0 1.5rem; font-family: ui-sans-serif, system-ui, sans-serif; }
 .sv-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.5rem 0 1rem; }
+.sv-header-actions { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+.custom-print-columns { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.checkbox-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+}
+.checkbox-pill input { accent-color: #2563eb; }
 .sv-header h1 { margin: 0 0 .25rem; font-size: 1.6rem; font-weight: 800; color: #0f172a; }
 .sv-header p { margin: 0; color: #64748b; font-size: .9rem; }
 

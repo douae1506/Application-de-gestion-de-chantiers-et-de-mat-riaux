@@ -7,20 +7,15 @@ use Illuminate\Http\Request;
 
 class FournisseurController extends Controller
 {
-    // Liste des fournisseurs
     public function index()
     {
         $fournisseurs = Fournisseur::latest()->get();
         return response()->json(['data' => $fournisseurs]);
     }
-
-    // Détail d'un fournisseur
     public function show(Fournisseur $fournisseur)
     {
         return response()->json(['data' => $fournisseur]);
     }
-
-    // Créer un fournisseur
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -44,14 +39,12 @@ class FournisseurController extends Controller
             'data'    => $fournisseur,
         ], 201);
     }
-
-    // Mettre à jour un fournisseur
     public function update(Request $request, Fournisseur $fournisseur)
     {
         $validated = $request->validate([
             'nom'         => 'sometimes|string|max:255',
             'responsable' => 'nullable|string|max:255',
-            'email'        => 'nullable|email|max:255|unique:fournisseurs,email', 
+            'email'        => 'nullable|email|max:255|unique:fournisseurs,email,' . $fournisseur->id,
             'telephone'   => 'nullable|string|max:50',
             'adresse'     => 'nullable|string',
             'ville'       => 'nullable|string|max:100',
@@ -69,8 +62,6 @@ class FournisseurController extends Controller
             'data'    => $fournisseur,
         ]);
     }
-
-    // Supprimer un fournisseur
     public function destroy(Fournisseur $fournisseur)
     {
         $fournisseur->delete();
@@ -78,11 +69,7 @@ class FournisseurController extends Controller
             'success' => true,
             'message' => 'Fournisseur supprimé.',
         ]);
-    }
-    /**
- * Retourne la liste des produits associés à un fournisseur.
- */
-    
+    } 
 
     public function produits(Fournisseur $fournisseur)
 {

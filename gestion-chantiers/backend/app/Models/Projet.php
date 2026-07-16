@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Services\NotificationService;
 
 class Projet extends Model
 {
@@ -64,12 +65,22 @@ class Projet extends Model
     }
 
     public function responsable()
-{
+    {
     return $this->belongsTo(User::class, 'responsable_id');
-}
+    }
 
     protected static function booted()
     {
+        static::saving(function ($projet) {
+            if ($projet->isDirty('statut')) {
+                if ($projet->statut === 'termine') {
+                    $projet->date_fin_reelle = $projet->date_fin_reelle ?: now();
+                } elseif ($projet->getOriginal('statut') === 'termine') {
+                    $projet->date_fin_reelle = null;
+                }
+            }
+        });
+
         static::saved(function ($projet) {
             $projet->chantier?->mettreAJourStatistiques();
         });
@@ -84,6 +95,21 @@ class Projet extends Model
 
         static::deleted(function ($projet) {
             $projet->chantier?->updateStatusAndStats();
+        });
+
+        static::created(function ($projet) {
+            NotificationService::projetCree($projet);
+        });
+
+        static::updated(function ($projet) {
+            $champsAuto = ['progression', 'cout_reel', 'statut', 'updated_at'];
+            $champsMetier = array_diff(array_keys($projet->getChanges()), $champsAuto);
+
+            if ($projet->wasChanged('statut') && $projet->statut === 'termine') {
+                NotificationService::projetTermine($projet);
+            } elseif (!empty($champsMetier)) {
+                NotificationService::projetModifie($projet);
+            }
         });
     }
 

@@ -41,7 +41,7 @@ class SortieStock extends Model
 
     // Accès direct au projet via le chantier
     public function projet()
-{
+    {
     return $this->belongsTo(Projet::class);
-}
+    }
 }

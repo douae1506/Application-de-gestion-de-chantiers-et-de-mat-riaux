@@ -1,50 +1,3 @@
-Pour que le tableau des chantiers prenne toute la largeur de la page (les 3/3), il suffit de le sortir de la grille de mise en page (`workspace-grid`) ou d'adapter la structure HTML pour qu'il s'aligne en dessous ou au-dessus de celle-ci.
-
-Voici le code mis à jour. Le tableau des chantiers est maintenant un bloc indépendant de pleine largeur situé juste en dessous des informations du client.
-
-### 💻 Le Code Modifié
-
-```vue
-<script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import clientService from '@/services/clientService'
-
-const route = useRoute()
-const client = ref(null)
-const loading = ref(true)
-const error = ref(null)
-
-async function loadClient() {
-    try {
-        loading.value = true
-        const res = await clientService.getClient(route.params.id)
-        client.value = res.data.data
-    } catch (err) {
-        console.error("Erreur chargement client :", err)
-        error.value = "Impossible de récupérer les données du client."
-    } finally {
-        loading.value = false
-    }
-}
-
-function formatDate(dateString) {
-    if (!dateString) return '—'
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    })
-}
-
-function getBadgeClass(type) {
-    if (!type) return 'badge-default'
-    return `badge-${type.toLowerCase().trim()}`
-}
-
-onMounted(loadClient)
-</script>
-
 <template>
 <div class="crm-viewport">
     <!-- CHARGEMENT -->
@@ -568,5 +521,3 @@ onMounted(loadClient)
     .info-grid.grid-split { grid-template-columns: 1fr; }
 }
 </style>
-
-```

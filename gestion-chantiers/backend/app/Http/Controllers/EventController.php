@@ -88,7 +88,24 @@
 	
 	    public function all(Request $request)
 	{
+	    $userId = $request->user()->id;
+	    $role = $request->user()->role;
+
+	    // Les événements liés à un chantier sont visibles par toute l'équipe.
+	    // Les événements "personnels" (sans chantier) ne sont visibles que
+	    // par leur créateur.
+	    // Le magasinier n'étant pas rattaché aux chantiers, il ne voit que
+	    // son propre agenda personnel.
 	    $query = Event::with('chantier');
+
+	    if ($role === 'magasinier') {
+	        $query->whereNull('chantier_id')->where('user_id', $userId);
+	    } else {
+	        $query->where(function ($q) use ($userId) {
+	            $q->whereNotNull('chantier_id')
+	              ->orWhere('user_id', $userId);
+	        });
+	    }
 	
 	    if ($request->filled('month')) {
 	        $query->whereMonth('date', $request->month);
@@ -123,8 +140,10 @@
    	
    	public function storeGlobal(Request $request)
    	{
+   	    // chantier_id est désormais optionnel : un événement sans chantier
+   	    // est un événement "personnel", rattaché à l'utilisateur connecté.
    	    $validated = $request->validate([
-   	        'chantier_id' => 'required|exists:chantiers,id',
+   	        'chantier_id' => 'nullable|exists:chantiers,id',
    	        'titre'       => 'required|string|max:255',
    	        'description' => 'nullable|string',
    	        'date'        => 'required|date',
@@ -133,6 +152,13 @@
    	    ]);
    	
    	    $validated['statut'] = 'a_venir';
+   	    $validated['user_id'] = $request->user()->id;
+   	
+   	    // Le magasinier ne gere pas de chantiers : ses evenements sont
+   	    // toujours personnels, quel que soit ce qui est envoye.
+   	    if ($request->user()->role === 'magasinier') {
+   	        $validated['chantier_id'] = null;
+   	    }
    	
    	    $event = Event::create($validated);
    	

@@ -4,7 +4,7 @@
     <div class="fv-header">
       <div>
         <h1>Gestion des Fournisseurs</h1>
-        <p>Gérez la liste de vos fournisseurs (matériaux, équipements, etc.)</p>
+        <p>Gérez la liste de vos fournisseurs.</p>
       </div>
       <button class="btn btn-primary" @click="openCreateModal">+ Nouveau fournisseur</button>
     </div>
@@ -15,7 +15,7 @@
         <div><strong>{{ fournisseurs.length }}</strong><span>Fournisseurs</span></div>
       </div>
     </div>
-
+  
     <div class="table-card">
       <div v-if="loading" class="loading-state">
         <div class="spinner"></div><span>Chargement...</span>

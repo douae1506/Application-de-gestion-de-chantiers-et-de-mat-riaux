@@ -7,14 +7,24 @@
         <h1>Chantiers</h1>
         <p>{{ chantiers.length }} chantier{{ chantiers.length > 1 ? 's' : '' }} au total</p>
       </div>
-      <button
-  class="btn btn-primary"
-  @click="$router.push({ name: 'chantier-create' })"
->
-
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-        Nouveau chantier
-      </button>
+      <div class="page-header-actions">
+        <button
+          v-if="auth.hasPermission('create_chantiers')"
+          class="btn btn-primary"
+          @click="$router.push({ name: 'chantier-create' })"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Nouveau chantier
+        </button>
+        <ExportToolbar
+          :pdf-url="'/admin/exports/chantiers'"
+          :pdf-params="filters"
+          pdf-filename="chantiers"
+          :excel-columns="excelColumns"
+          :excel-rows="chantiers"
+          excel-filename="chantiers"
+        />
+      </div>
     </div>
 
     <!-- ── Filtres ──────────────────────────────────────────── -->
@@ -59,7 +69,7 @@
       </div>
       <h3>Aucun chantier trouvé</h3>
       <p>{{ filters.search || filters.statut || filters.type ? 'Modifiez vos filtres ou' : '' }} Créez votre premier chantier.</p>
-      <button class="btn btn-primary" @click="openCreateModal">Nouveau chantier</button>
+      <button v-if="auth.hasPermission('create_chantiers')" class="btn btn-primary" @click="openCreateModal">Nouveau chantier</button>
     </div>
 
     <!-- ── Grille ───────────────────────────────────────────── -->
@@ -132,8 +142,23 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import chantierService from '@/services/chantierService'
 import clientService from '@/services/clientService'
+import { useAuthStore } from '@/stores/auth'
+import ExportToolbar from '@/components/ExportToolbar.vue'
+
+const excelColumns = [
+  { key: 'reference', label: 'Référence' },
+  { key: 'nom', label: 'Nom' },
+  { key: 'ville', label: 'Ville', value: (r) => r.ville || '—' },
+  { key: 'type_label', label: 'Type', value: (r) => r.type_label || r.type },
+  { key: 'statut_label', label: 'Statut', value: (r) => r.statut_label || r.statut },
+  { key: 'progression', label: 'Progression (%)' },
+  { key: 'budget_total', label: 'Budget total (DH)' },
+  { key: 'cout_reel', label: 'Coût réel (DH)' },
+  { key: 'date_debut', label: 'Date début' },
+]
 
 const router = useRouter()
+const auth = useAuthStore()
 
 const chantiers = ref([])
 const clients   = ref([])
@@ -197,7 +222,7 @@ async function fetchClients() {
 // ─── Actions ──────────────────────────────────────────────
 
 function goDetail(id) {
-  router.push({ name: 'ChantierDetail', params: { id } })
+  router.push({ name: 'chantier-detail', params: { id } })
 }
 
 
@@ -241,6 +266,7 @@ onMounted(() => {
   display: flex; align-items: flex-start; justify-content: space-between;
   margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
 }
+.page-header-actions { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
 .page-header h1 { font-size: 1.4rem; font-weight: 700; color: #0a2540; margin: 0 0 .2rem; }
 .page-header p  { font-size: .875rem; color: #639fab; margin: 0; }
 

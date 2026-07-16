@@ -16,12 +16,12 @@
         <!-- Barre supérieure -->
         <div class="top-bar">
           <div class="breadcrumb">
-            Chantiers &gt; <span @click="$router.push({ name: 'chantiers' })" style="cursor:pointer;">Liste des chantiers</span> &gt; <span class="active">Détail du chantier</span>
+            Chantiers &gt; <span @click="$router.push({ name: 'AdminChantiers' })" style="cursor:pointer;">Liste des chantiers</span> &gt; <span class="active">Détail du chantier</span>
           </div>
           <div class="action-buttons">
-            <button class="btn btn-secondary" @click="$router.push({ name: 'chantiers' })">Retour à la liste</button>
-            <button class="btn btn-secondary" @click="editChantier">Modifier</button>
-            <button class="btn btn-danger" @click="deleteChantier">Supprimer</button>
+            <button class="btn btn-secondary" @click="$router.push({ name: 'AdminChantiers' })">Retour à la liste</button>
+            <button v-if="auth.hasPermission('edit_chantiers')" class="btn btn-secondary" @click="editChantier">Modifier</button>
+            <button v-if="auth.hasPermission('delete_chantiers')" class="btn btn-danger" @click="deleteChantier">Supprimer</button>
           </div>
         </div>
 
@@ -78,6 +78,7 @@
             <div class="meta-list">
               <div class="meta-row"><span>Entreprise</span><strong>{{ chantier.client?.entreprise || '—' }}</strong></div>
               <div class="meta-row"><span>Architecte</span><strong>{{ chantier.architecte || 'Non défini' }}</strong></div>
+              <div class="meta-row"><span>Responsable</span><strong>{{ chantier.responsable?.nom_complet || 'Non assigné' }}</strong></div>
               <div class="meta-row"><span>Début</span><strong>{{ chantier.date_debut }}</strong></div>
               <div class="meta-row border-none"><span>Budget total</span><strong class="text-blue">{{ formatMAD(chantier.budget_total) }}</strong></div>
             </div>
@@ -87,7 +88,7 @@
         <!-- Onglets -->
         <div class="tabs-container">
           <button 
-            v-for="tab in tabs" :key="tab.key"
+            v-for="tab in visibleTabs" :key="tab.key"
             class="tab-link" :class="{ active: activeTab === tab.key }"
             @click="activeTab = tab.key"
           >
@@ -220,7 +221,7 @@
           </div>
 
           <!-- Événements (prochains) -->
-          <div class="grid-card">
+          <div class="grid-card" v-if="auth.hasPermission('view_evenements')">
             <div class="card-header-flex">
               <h3 class="card-title">Événements à venir</h3>
               <button class="btn btn-sm btn-outline" @click="activeTab = 'evenements'">Voir tout</button>
@@ -264,37 +265,65 @@
             <a href="#" @click.prevent="activeTab = 'documents'" class="view-all-link">Gérer les documents</a>
           </div>
 
-          <!-- Matériaux utilisés (extrait) -->
+          <!-- ====== MATÉRIAUX UTILISÉS (EXTRAIT) ====== -->
           <div class="grid-card col-span-2">
             <div class="card-header-flex">
               <h3 class="card-title">Matériaux utilisés ({{ chantier.materiaux?.length || 0 }})</h3>
+              <span class="text-muted" style="font-size:0.75rem;">
+                {{ chantier.materiaux?.filter(m => m.projet_id).length || 0 }} affectés
+              </span>
             </div>
-            <div v-if="chantier.materiaux?.length" class="materiaux-compact">
-              <div v-for="m in chantier.materiaux.slice(0, 3)" :key="m.produit" class="materiau-item">
-                <span class="mat-nom">{{ m.produit }}</span>
-                <span class="mat-qte">{{ m.quantite }} {{ m.unite }}</span>
-                <span class="mat-cout">{{ formatMAD(m.cout_total) }}</span>
-                <div class="action-group">
-                  <button 
-                    v-if="!m.projet_id" 
-                    class="btn btn-sm btn-outline" 
-                    @click="returnToStock(m.sortie_id)"
-                  >
-                    Retourner
-                  </button>
-                  <button 
-                    v-if="!m.projet_id" 
-                    class="btn btn-sm btn-primary" 
-                    @click="openAffecterModal(m.sortie_id, m.quantite)"
-                  >
-                    Affecter
-                  </button>
-                  <span v-else class="text-muted" style="font-size:0.7rem;">Affecté</span>
-                </div>
-              </div>
-              <p v-if="chantier.materiaux.length > 3" class="more-indicator">... et {{ chantier.materiaux.length - 3 }} autres</p>
+            <div v-if="chantier.materiaux?.length" class="materiaux-table-compact">
+              <table class="materiaux-compact-table">
+                <thead>
+                  <tr>
+                    <th>Matériau</th>
+                    <th class="text-center">Qté</th>
+                    <th class="text-center">Unité</th>
+                    <th class="text-right">Coût total</th>
+                    <th class="text-center">Statut</th>
+                    <th class="text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="m in chantier.materiaux.slice(0, 5)" :key="m.sortie_id">
+                    <td><strong>{{ m.produit }}</strong></td>
+                    <td class="text-center">{{ m.quantite }}</td>
+                    <td class="text-center">{{ m.unite || '—' }}</td>
+                    <td class="text-right">{{ formatMAD(m.cout_total) }}</td>
+                    <td class="text-center">
+                      <span v-if="m.projet_id" class="affecte-badge">Affecté</span>
+                      <span v-else class="non-affecte-badge">Non affecté</span>
+                    </td>
+                    <td class="text-center">
+                      <div class="action-group-compact">
+                        <button 
+                          v-if="!m.projet_id" 
+                          class="btn btn-sm btn-outline" 
+                          @click="returnToStock(m.sortie_id)"
+                          title="Retourner au stock"
+                        >
+                          ↺
+                        </button>
+                        <button 
+                          v-if="!m.projet_id" 
+                          class="btn btn-sm btn-primary" 
+                          @click="openAffecterModal(m.sortie_id, m.quantite)"
+                          title="Affecter à un projet"
+                        >
+                          Affecter
+                        </button>
+                        <span v-else class="affected-check">✓</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p v-if="chantier.materiaux.length > 5" class="more-indicator">
+                ... et {{ chantier.materiaux.length - 5 }} autres matériaux
+              </p>
             </div>
-            <p v-else class="text-muted">Aucun matériau enregistré.</p>
+            <p v-else class="text-muted" style="padding: 1rem 0; text-align:center;">Aucun matériau enregistré.</p>
             <a href="#" @click.prevent="activeTab = 'materiaux'" class="view-all-link">Voir tous les matériaux</a>
           </div>
         </div>
@@ -304,7 +333,7 @@
           <div class="projets-full-list">
             <div class="projets-header-actions">
               <h2>Projets du chantier</h2>
-              <button class="btn btn-primary" @click="ajouterProjet">+ Ajouter un projet</button>
+              <button v-if="auth.hasPermission('create_projets')" class="btn btn-primary" @click="ajouterProjet">+ Ajouter un projet</button>
             </div>
             <div v-if="chantier.projets?.length" class="table-responsive">
               <table class="projets-table-full">
@@ -321,7 +350,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="p in chantier.projets" :key="p.id" @click="voirProjet(p.id)" class="clickable-row">
+                  <tr v-for="p in chantier.projets" :key="p.id" @click="voirProjet(p.id)" :class="{ 'clickable-row': auth.hasPermission('view_projets') }">
                     <td>{{ p.reference }}</td>
                     <td><strong>{{ p.nom }}</strong></td>
                     <td><span class="status-badge sm" :class="statutClass(p.statut)">{{ p.statut_label || p.statut }}</span></td>
@@ -333,7 +362,7 @@
                     <td><strong class="text-blue">{{ formatMAD(p.cout_reel) }}</strong></td>
                     <td>{{ p.date_debut }} → {{ p.date_fin_prevue || '…' }}</td>
                     <td>
-                      <button class="btn btn-sm btn-outline" @click.stop="voirProjet(p.id)">Voir</button>
+                      <button v-if="auth.hasPermission('view_projets')" class="btn btn-sm btn-outline" @click.stop="voirProjet(p.id)">Voir</button>
                     </td>
                   </tr>
                 </tbody>
@@ -348,7 +377,7 @@
           <div class="documents-full">
             <div class="section-header-row">
               <h2>Documents du chantier</h2>
-              <button class="btn btn-primary" @click="showDocModal = true">+ Ajouter un document</button>
+              <button v-if="auth.hasPermission('create_documents')" class="btn btn-primary" @click="showDocModal = true">+ Ajouter un document</button>
             </div>
             <div v-if="chantier.documents?.length" class="documents-grid">
               <div v-for="doc in chantier.documents" :key="doc.id" class="document-card">
@@ -360,14 +389,14 @@
                 </div>
                 <div class="doc-card-actions">
                   <a :href="getDocumentUrl(doc.fichier)" target="_blank" class="btn btn-sm btn-outline">Voir</a>
-                  <button class="btn btn-sm btn-danger" @click="supprimerDocument(doc.id)">Supprimer</button>
+                  <button v-if="auth.hasPermission('delete_documents')" class="btn btn-sm btn-danger" @click="supprimerDocument(doc.id)">Supprimer</button>
                 </div>
               </div>
             </div>
             <div v-else class="empty-state-box">
               <span>📂</span>
               <p>Aucun document disponible.</p>
-              <button class="btn btn-primary" @click="showDocModal = true">+ Ajouter un document</button>
+              <button v-if="auth.hasPermission('create_documents')" class="btn btn-primary" @click="showDocModal = true">+ Ajouter un document</button>
             </div>
           </div>
         </div>
@@ -429,7 +458,7 @@
           <div class="events-full-section">
             <div class="section-header-row">
               <h2>Événements du chantier</h2>
-              <button class="btn btn-primary" @click="openAddEvent">+ Ajouter un événement</button>
+              <button v-if="auth.hasPermission('create_evenements')" class="btn btn-primary" @click="openAddEvent">+ Ajouter un événement</button>
             </div>
 
             <!-- Filtres -->
@@ -474,9 +503,8 @@
                       </span>
                     </div>
                     <div class="event-actions">
-                      <button class="btn btn-sm btn-outline" @click="exportEventToIcs(evt)" title="Exporter au calendrier">📅</button>
-                      <button class="btn btn-sm btn-outline" @click="openEditEvent(evt)">Modifier</button>
-                      <button class="btn btn-sm btn-danger" @click="deleteEvent(evt.id)">Supprimer</button>
+                      <button v-if="auth.hasPermission('edit_evenements')" class="btn btn-sm btn-outline" @click="openEditEvent(evt)">Modifier</button>
+                      <button v-if="auth.hasPermission('delete_evenements')" class="btn btn-sm btn-danger" @click="deleteEvent(evt.id)">Supprimer</button>
                     </div>
                   </div>
                 </div>
@@ -503,9 +531,9 @@
                       </span>
                     </div>
                     <div class="event-actions">
-                      <button class="btn btn-sm btn-outline" @click="exportEventToIcs(evt)" title="Exporter au calendrier">📅</button>
-                      <button class="btn btn-sm btn-outline" @click="openEditEvent(evt)">Modifier</button>
-                      <button class="btn btn-sm btn-danger" @click="deleteEvent(evt.id)">Supprimer</button>
+
+                      <button v-if="auth.hasPermission('edit_evenements')" class="btn btn-sm btn-outline" @click="openEditEvent(evt)">Modifier</button>
+                      <button v-if="auth.hasPermission('delete_evenements')" class="btn btn-sm btn-danger" @click="deleteEvent(evt.id)">Supprimer</button>
                     </div>
                   </div>
                 </div>
@@ -529,9 +557,8 @@
                       </span>
                     </div>
                     <div class="event-actions">
-                      <button class="btn btn-sm btn-outline" @click="exportEventToIcs(evt)" title="Exporter au calendrier">📅</button>
-                      <button class="btn btn-sm btn-outline" @click="openEditEvent(evt)">Modifier</button>
-                      <button class="btn btn-sm btn-danger" @click="deleteEvent(evt.id)">Supprimer</button>
+                      <button v-if="auth.hasPermission('edit_evenements')" class="btn btn-sm btn-outline" @click="openEditEvent(evt)">Modifier</button>
+                      <button v-if="auth.hasPermission('delete_evenements')" class="btn btn-sm btn-danger" @click="deleteEvent(evt.id)">Supprimer</button>
                     </div>
                   </div>
                 </div>
@@ -563,8 +590,8 @@
                       </span>
                     </div>
                     <div class="event-actions">
-                      <button class="btn btn-sm btn-outline" @click="openEditEvent(evt)">Modifier</button>
-                      <button class="btn btn-sm btn-danger" @click="deleteEvent(evt.id)">Supprimer</button>
+                      <button v-if="auth.hasPermission('edit_evenements')" class="btn btn-sm btn-outline" @click="openEditEvent(evt)">Modifier</button>
+                      <button v-if="auth.hasPermission('delete_evenements')" class="btn btn-sm btn-danger" @click="deleteEvent(evt.id)">Supprimer</button>
                     </div>
                   </div>
                 </div>
@@ -575,7 +602,7 @@
               <span>📅</span>
               <p v-if="eventFilterStatut || eventFilterType">Aucun événement ne correspond aux filtres sélectionnés.</p>
               <p v-else>Aucun événement planifié pour ce chantier.</p>
-              <button class="btn btn-primary" @click="openAddEvent">+ Ajouter un événement</button>
+              <button v-if="auth.hasPermission('create_evenements')" class="btn btn-primary" @click="openAddEvent">+ Ajouter un événement</button>
             </div>
           </div>
         </div>
@@ -583,78 +610,130 @@
         <!-- ====== ONGLET PRODUITS UTILISÉS (MATÉRIAUX) ====== -->
         <div v-else-if="activeTab === 'materiaux'" class="tab-content-alternative">
           <div class="materiaux-list">
-            <div class="card-header-flex materiaux-header-flex">
-              <h2 style="margin:0;">Produits utilisés</h2>
-              <button
-                v-if="selectableMateriaux.length"
-                class="btn btn-sm btn-danger"
-                :disabled="selectedMateriaux.length === 0"
-                @click="returnSelectionToStock"
-              >
-                Annuler la sélection ({{ selectedMateriaux.length }})
-              </button>
+            <div class="materiaux-header-full">
+              <div class="materiaux-header-left">
+                <h2>Produits utilisés</h2>
+                <span class="materiaux-count">{{ chantier.materiaux?.length || 0 }} produits</span>
+                <span class="materiaux-affectes">
+                  {{ chantier.materiaux?.filter(m => m.projet_id).length || 0 }} affectés
+                </span>
+              </div>
+              <div class="materiaux-header-actions">
+                <button
+                  v-if="selectableMateriaux.length"
+                  class="btn btn-sm btn-danger"
+                  :disabled="selectedMateriaux.length === 0"
+                  @click="returnSelectionToStock"
+                >
+                  Retourner au stock ({{ selectedMateriaux.length }})
+                </button>
+              
+              </div>
             </div>
-            <div v-if="chantier.materiaux?.length" class="materiaux-table">
-              <table>
+
+            <div v-if="chantier.materiaux?.length" class="materiaux-table-full-wrapper">
+              <table class="materiaux-table-full">
                 <thead>
                   <tr>
-                    <th style="width:2rem;">
+                    <th style="width:2.5rem;">
                       <input
                         type="checkbox"
-                        :checked="allMateriauxSelected"
+                        :checked="allMateriauxSelected && selectableMateriaux.length > 0"
                         :disabled="selectableMateriaux.length === 0"
                         @change="toggleSelectAllMateriaux($event.target.checked)"
+                        title="Sélectionner tout"
                       />
                     </th>
                     <th>Produit</th>
                     <th>Catégorie</th>
-                    <th>Quantité</th>
-                    <th>Unité</th>
-                    <th>Coût unitaire</th>
-                    <th>Coût total</th>
-                    <th>Action</th>
+                    <th class="text-center">Quantité</th>
+                    <th class="text-center">Unité</th>
+                    <th class="text-right">Coût unitaire</th>
+                    <th class="text-right">Coût total</th>
+                    <th class="text-center">Statut</th>
+                    <th class="text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="m in chantier.materiaux" :key="m.sortie_id">
+                  <tr v-for="m in chantier.materiaux" :key="m.sortie_id" :class="{ 'row-affecte': m.projet_id }">
                     <td>
                       <input
                         v-if="!m.projet_id"
                         type="checkbox"
                         :value="m.sortie_id"
                         v-model="selectedMateriaux"
+                        :title="'Sélectionner ' + m.produit"
                       />
+                      <span v-else class="affected-icon">✓</span>
                     </td>
-                    <td>{{ m.produit }}</td>
-                    <td>{{ m.categorie }}</td>
-                    <td>{{ m.quantite }}</td>
-                    <td>{{ m.unite }}</td>
-                    <td>{{ formatMAD(m.cout_unitaire) }}</td>
-                    <td>{{ formatMAD(m.cout_total) }}</td>
                     <td>
-                      <div class="action-group">
+                      <strong>{{ m.produit }}</strong>
+                      <span v-if="m.projet_id" class="projet-tag">Affecté au projet #{{ m.projet_id }}</span>
+                    </td>
+                    <td>{{ m.categorie || '—' }}</td>
+                    <td class="text-center">{{ m.quantite }}</td>
+                    <td class="text-center">{{ m.unite || '—' }}</td>
+                    <td class="text-right">{{ formatMAD(m.cout_unitaire) }}</td>
+                    <td class="text-right"><strong>{{ formatMAD(m.cout_total) }}</strong></td>
+                    <td class="text-center">
+                      <span v-if="m.projet_id" class="affecte-badge-full">
+                        <span class="badge-icon">✓</span> Affecté
+                      </span>
+                      <span v-else class="non-affecte-badge-full">
+                        <span class="badge-icon">○</span> Non affecté
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      <div class="action-group-full">
                         <button 
                           v-if="!m.projet_id" 
-                          class="btn btn-sm btn-outline" 
+                          class="btn btn-sm btn-outline-return" 
                           @click="returnToStock(m.sortie_id)"
+                          title="Retourner au stock"
                         >
-                          Retourner
+                          <span class="btn-icon">↺</span> Retourner
                         </button>
                         <button 
                           v-if="!m.projet_id" 
-                          class="btn btn-sm btn-primary" 
+                          class="btn btn-sm btn-primary-affect" 
                           @click="openAffecterModal(m.sortie_id, m.quantite)"
+                          title="Affecter à un projet"
                         >
-                          Affecter
+                        Affecter
                         </button>
-                        <span v-else class="text-muted">Affecté</span>
+                        <span v-else class="affected-label">
+                          <span class="check-mark">✓</span> Affecté
+                        </span>
                       </div>
                     </td>
                   </tr>
                 </tbody>
+                <tfoot v-if="chantier.materiaux.length > 0">
+                  <tr>
+                    <td colspan="9">
+                      <div class="materiaux-footer">
+                        <span>
+                          Total : <strong>{{ chantier.materiaux.length }}</strong> produits
+                        </span>
+                        <span>
+                          Affectés : <strong class="text-green">{{ chantier.materiaux.filter(m => m.projet_id).length }}</strong>
+                        </span>
+                        <span>
+                          Non affectés : <strong class="text-orange">{{ chantier.materiaux.filter(m => !m.projet_id).length }}</strong>
+                        </span>
+                        <span>
+                          Coût total : <strong>{{ formatMAD(chantier.materiaux.reduce((sum, m) => sum + (m.cout_total || 0), 0)) }}</strong>
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
-            <p v-else>Aucun matériau enregistré.</p>
+            <div v-else class="empty-state-box">
+              <span>📦</span>
+              <p>Aucun matériau enregistré pour ce chantier.</p>
+            </div>
           </div>
         </div>
       </template>
@@ -807,11 +886,13 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import chantierService from '@/services/chantierService'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 
 // ─── Router ──────────────────────────────────────────────
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 const chantierId = route.params.id
 // ─── États généraux ──────────────────────────────────────
 const chantier = ref(null)
@@ -828,6 +909,8 @@ const tabs = [
   { key: 'evenements', label: 'Événements', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>` },
   { key: 'materiaux', label: 'Produits utilisés', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>` }
 ]
+
+const visibleTabs = computed(() => tabs.filter(t => t.key !== 'evenements' || auth.hasPermission('view_evenements')))
 
 // ─── Image selon type ────────────────────────────────────
 function getImageForType(type) {
@@ -984,6 +1067,7 @@ async function confirmAffecter() {
 
 // ─── Navigation projets ──────────────────────────────────
 function voirProjet(projetId) {
+  if (!auth.hasPermission('view_projets')) return
   router.push({ name: 'projet-detail', params: { id: projetId } })
 }
 function ajouterProjet() {
@@ -1018,7 +1102,7 @@ async function deleteChantier() {
   if (!confirm('Voulez-vous vraiment supprimer ce chantier ?')) return
   try {
     await chantierService.deleteChantier(chantierId)
-    router.push({ name: 'chantiers' })
+    router.push({ name: 'AdminChantiers' })
   } catch (e) {
     alert('Erreur lors de la suppression')
   }
@@ -1091,6 +1175,9 @@ async function saveEvent() {
   try {
     const payload = { ...eventForm }
     delete payload.id
+    // "heure" est optionnelle : une chaîne vide fait échouer la validation
+    // Laravel (nullable + date_format), donc on envoie null plutôt que ''.
+    if (!payload.heure) payload.heure = null
 
     let response
     if (isEditingEvent.value) {
@@ -1173,28 +1260,6 @@ function eventBadgeLabel(evt) {
 }
 
 // Export d'un événement au format .ics (compatible Google Calendar / Outlook)
-function exportEventToIcs(evt) {
-  const dateStr = evt.date.replace(/-/g, '')
-  const timeStr = (evt.heure_formatee || evt.heure || '09:00').replace(':', '') + '00'
-  const dtStart = `${dateStr}T${timeStr}`
-  const ics = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'BEGIN:VEVENT',
-    `UID:${evt.id}@chantier`,
-    `DTSTART:${dtStart}`,
-    `SUMMARY:${evt.titre}`,
-    `DESCRIPTION:${evt.description || ''}`,
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\r\n')
-  const blob = new Blob([ics], { type: 'text/calendar' })
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = `${evt.titre.replace(/\s+/g, '_')}.ics`
-  link.click()
-  URL.revokeObjectURL(link.href)
-}
 
 // Prochains événements (pour l'aperçu)
 const upcomingEvents = computed(() => {
@@ -1221,7 +1286,6 @@ const chantierProgression = computed(() => {
   return Math.round(total / chantier.value.projets.length)
 })
 
-// ─── Gantt ────────────────────────────────────────────────
 const GANTT_COLORS = ['#3b82f6','#10b981','#8b5cf6','#f59e0b','#ef4444','#14b8a6','#ec4899','#f97316']
 
 function ganttColor(id) {
@@ -1312,9 +1376,12 @@ function statutClass(statut) {
 
 // ─── Montage ──────────────────────────────────────────────
 onMounted(() => {
+  if (route.query.tab) {
+    activeTab.value = route.query.tab
+  }
   if (chantierId) {
     fetchChantier()
-    fetchEvents()
+    if (auth.hasPermission('view_evenements')) fetchEvents()
   } else {
     error.value = "Aucun identifiant de chantier fourni."
     loading.value = false
@@ -1324,7 +1391,7 @@ onMounted(() => {
 watch(() => route.params.id, (newId) => {
   if (newId) {
     fetchChantier()
-    fetchEvents()
+    if (auth.hasPermission('view_evenements')) fetchEvents()
   }
 })
 </script>
@@ -1936,23 +2003,111 @@ watch(() => route.params.id, (newId) => {
   text-decoration: none;
 }
 
-/* ── Matériaux compact ────────────────────────────────────── */
-.materiaux-compact {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+/* ── Matériaux compact (tableau) ──────────────────────────── */
+.materiaux-table-compact {
+  overflow-x: auto;
+  margin: 0 -0.5rem;
 }
-.materiau-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.3rem 0.4rem;
-  border-bottom: 1px solid #f1f5f9;
+.materiaux-compact-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 0.85rem;
+}
+.materiaux-compact-table thead th {
+  padding: 0.6rem 0.5rem;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  border-bottom: 2px solid #e2e8f0;
+  background: #f8fafc;
+}
+.materiaux-compact-table tbody td {
+  padding: 0.5rem 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+.materiaux-compact-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+.materiaux-compact-table .text-center {
+  text-align: center;
+}
+.materiaux-compact-table .text-right {
+  text-align: right;
+}
+.materiaux-compact-table td:first-child {
+  font-weight: 500;
+  color: #0f172a;
+}
+
+/* Badges d'affectation pour l'aperçu */
+.affecte-badge {
+  display: inline-block;
+  background: #d1fae5;
+  color: #065f46;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+.non-affecte-badge {
+  display: inline-block;
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+/* Actions compactes */
+.action-group-compact {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: center;
   align-items: center;
 }
-.mat-nom { font-weight: 600; color: #0f172a; }
-.mat-qte { color: #475569; }
-.mat-cout { font-weight: 600; color: #2563eb; }
+.action-group-compact .btn {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  min-width: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.action-group-compact .btn-outline {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+.action-group-compact .btn-outline:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+.action-group-compact .btn-primary {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 0.2rem 0.8rem;
+}
+.action-group-compact .btn-primary:hover {
+  background: #1d4ed8;
+}
+.affected-check {
+  color: #10b981;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.card-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
 
 /* ── Groupes d'actions ─────────────────────────────────────── */
 .action-group {
@@ -2339,43 +2494,244 @@ watch(() => route.params.id, (newId) => {
   margin: 0.5rem 0 0;
 }
 
-/* ── Matériaux full ──────────────────────────────────────────── */
+/* ── Matériaux Full (onglet) ────────────────────────────────── */
 .materiaux-list {
   background: #fff;
   border-radius: 16px;
   padding: 1.5rem;
   border: 1px solid #e2e8f0;
 }
-.materiaux-list h2 {
-  margin: 0 0 1rem;
-  font-size: 1.2rem;
+.materiaux-header-full {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
-.materiaux-table table {
+.materiaux-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.materiaux-header-left h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.materiaux-count {
+  font-size: 0.85rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.2rem 0.8rem;
+  border-radius: 12px;
+}
+.materiaux-affectes {
+  font-size: 0.85rem;
+  color: #065f46;
+  background: #d1fae5;
+  padding: 0.2rem 0.8rem;
+  border-radius: 12px;
+}
+.materiaux-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.materiaux-header-actions .btn-danger {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+.materiaux-header-actions .btn-danger:hover:not(:disabled) {
+  background: #fecaca;
+}
+.materiaux-header-actions .btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.materiaux-header-actions .btn-outline {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+.materiaux-header-actions .btn-outline:hover {
+  background: #f1f5f9;
+}
+
+.materiaux-table-full-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+.materiaux-table-full {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
 }
-.materiaux-table th, .materiaux-table td {
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid #e2e8f0;
+.materiaux-table-full thead th {
+  padding: 0.75rem 0.75rem;
   text-align: left;
-}
-.materiaux-table th {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
   background: #f8fafc;
-  font-weight: 600;
-  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
 }
-.materiaux-header-flex {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+.materiaux-table-full tbody td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
 }
-.materiaux-table input[type="checkbox"] {
+.materiaux-table-full tbody tr:hover {
+  background-color: #f8fafc;
+}
+.materiaux-table-full tbody tr.row-affecte:hover {
+  background-color: #f0fdf4;
+}
+.materiaux-table-full .text-center {
+  text-align: center;
+}
+.materiaux-table-full .text-right {
+  text-align: right;
+}
+.materiaux-table-full td:first-child {
+  text-align: center;
+}
+.materiaux-table-full tbody td strong {
+  color: #0f172a;
+}
+
+/* Checkbox styles */
+.materiaux-table-full input[type="checkbox"] {
   width: 16px;
   height: 16px;
   cursor: pointer;
+  accent-color: #2563eb;
+}
+.affected-icon {
+  color: #10b981;
+  font-size: 1rem;
+  font-weight: 700;
+  display: inline-block;
+  width: 16px;
+}
+
+/* Projet tag */
+.projet-tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #065f46;
+  background: #d1fae5;
+  padding: 1px 8px;
+  border-radius: 10px;
+  margin-left: 0.5rem;
+}
+
+/* Badges d'affectation full */
+.affecte-badge-full {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #d1fae5;
+  color: #065f46;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+.affecte-badge-full .badge-icon {
+  font-size: 0.8rem;
+}
+.non-affecte-badge-full {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+.non-affecte-badge-full .badge-icon {
+  font-size: 0.8rem;
+}
+
+/* Actions full */
+.action-group-full {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.action-group-full .btn {
+  padding: 0.25rem 0.7rem;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.action-group-full .btn .btn-icon {
+  font-size: 0.85rem;
+}
+.btn-outline-return {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+.btn-outline-return:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+.btn-primary-affect {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+}
+.btn-primary-affect:hover {
+  background: #1d4ed8;
+}
+.affected-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #10b981;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.affected-label .check-mark {
+  font-size: 1rem;
+}
+
+/* Footer */
+.materiaux-footer {
+  display: flex;
+  gap: 2rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  background: #f8fafc;
+  border-top: 2px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+.materiaux-footer strong {
+  color: #0f172a;
+}
+.materiaux-footer .text-green {
+  color: #16a34a;
+}
+.materiaux-footer .text-orange {
+  color: #b45309;
 }
 </style>

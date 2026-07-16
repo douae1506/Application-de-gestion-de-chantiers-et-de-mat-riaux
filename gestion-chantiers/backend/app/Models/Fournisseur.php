@@ -7,27 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class Fournisseur extends Model
 {
     protected $fillable = [
-
         'nom',
-
         'responsable',
-
         'email',
-
         'telephone',
-
         'adresse',
-
         'ville',
-
         'pays',
-
         'code_postal',
-
         'site_web',
-
         'observations',
-
     ];
 
     // Un fournisseur peut proposer plusieurs produits,

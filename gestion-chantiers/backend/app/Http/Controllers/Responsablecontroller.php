@@ -504,7 +504,7 @@ class ResponsableController extends Controller
             $q->where('projet_id', $projet->id)->with('produit');
         }, 'expenses']);
 
-        $materiaux = $projet->chantier->sortieStocks->map(fn ($s) => [
+        $materiaux = $projet->chantier->sortieStocks->sortByDesc('id')->values()->map(fn ($s) => [
             'id'            => $s->id,
             'produit'       => $s->produit?->nom,
             'categorie'     => $s->produit?->categorie,

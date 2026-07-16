@@ -163,12 +163,17 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import projetService from '@/services/projetService'
 import chantierService from '@/services/chantierService'
 import userService from '@/services/userService'
 
 const router = useRouter()
+const route = useRoute()
+// Si on arrive depuis la page d'un chantier (bouton "Ajouter un projet"),
+// on pré-sélectionne ce chantier et on redirige vers son onglet "Projets"
+// après la création. Sinon, on redirige vers la liste globale des projets.
+const chantierIdFromQuery = route.query.chantierId || null
 
 // États
 const saving = ref(false)
@@ -210,6 +215,9 @@ async function loadData() {
     ])
     chantiers.value = chantiersRes.data.data || chantiersRes.data
     chefs.value = chefsRes.data.data || chefsRes.data
+    if (chantierIdFromQuery) {
+      form.chantier_id = chantierIdFromQuery
+    }
   } catch (e) {
     console.error('Erreur de chargement', e)
   }
@@ -228,7 +236,11 @@ async function saveProject() {
     // On retire le champ chef_projet_id s'il est vide
     if (!payload.responsable_id) delete payload.responsable_id
     await projetService.createProjet(payload)
-    router.push({ name: 'AdminProjets' })
+    if (chantierIdFromQuery) {
+      router.push({ name: 'chantier-detail', params: { id: chantierIdFromQuery }, query: { tab: 'projets' } })
+    } else {
+      router.push({ name: 'AdminProjets' })
+    }
   } catch (e) {
     console.error(e.response)
 

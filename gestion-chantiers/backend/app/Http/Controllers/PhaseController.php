@@ -36,7 +36,7 @@ class PhaseController extends Controller
         }
 
         $phase = Phase::create($validated);
-$this->updateProjectProgress($phase->projet_id);
+        $this->updateProjectProgress($phase->projet_id);
         return response()->json([
             'success' => true,
             'data'    => $phase,
@@ -76,18 +76,16 @@ $this->updateProjectProgress($phase->projet_id);
     public function destroy(Phase $phase)
     {
         $projectId = $phase->projet_id;
+        $phase->delete();
+        $this->updateProjectProgress($projectId);
 
-$phase->delete();
-
-$this->updateProjectProgress($projectId);
-
-return response()->json([
-    'success' => true,
-    'message' => 'Phase supprimée',
-]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Phase supprimée',
+        ]);
     }
     private function updateProjectProgress($projectId)
-{
+    {
     $projet = Projet::with('phases')->find($projectId);
 
     if (!$projet) {
@@ -101,6 +99,6 @@ return response()->json([
     $projet->progression = $progression;
     $projet->save();
 
-}
+    }
 
 }

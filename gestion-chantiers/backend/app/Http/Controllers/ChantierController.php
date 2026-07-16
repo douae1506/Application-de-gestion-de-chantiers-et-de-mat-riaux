@@ -10,8 +10,21 @@ class ChantierController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Chantier::with(['client', 'projets'])
+        $user = $request->user();
+
+        $query = Chantier::with(['client', 'projets', 'responsable'])
             ->latest();
+
+        if ($user) {
+            if ($user->role === 'responsable') {
+                $query->where('responsable_id', $user->id);
+            } elseif ($user->role === 'chef_projet') {
+                $query->whereHas('projets', function ($q) use ($user) {
+                    $q->where('responsable_id', $user->id);
+                });
+            }
+        }
+
         if ($search = $request->get('search')) {
             $query->search($search);
         }
@@ -27,12 +40,34 @@ class ChantierController extends Controller
         return response()->json(['data' => $chantiers]);
     }
 
-    // ─── Détail complet ───────────────────────────────────────
-    public function show(Chantier $chantier)
+    /**
+     * Vérifie qu'un utilisateur "responsable"/"chef_projet" a bien accès
+     * à ce chantier précis (sinon 403). Les autres rôles (admin, magasinier
+     * via permissions) ne sont pas concernés par cette restriction.
+     */
+    private function assertAccess(Chantier $chantier, ?\App\Models\User $user): void
     {
+        if (!$user) return;
+        if ($user->role === 'responsable' && $chantier->responsable_id !== $user->id) {
+            abort(403, "Vous n'avez pas accès à ce chantier.");
+        }
+        if ($user->role === 'chef_projet') {
+            $hasProjet = $chantier->projets()->where('responsable_id', $user->id)->exists();
+            if (!$hasProjet) {
+                abort(403, "Vous n'avez pas accès à ce chantier.");
+            }
+        }
+    }
+
+    // ─── Détail complet ───────────────────────────────────────
+    public function show(Request $request, Chantier $chantier)
+    {
+        $this->assertAccess($chantier, $request->user());
         $chantier->load([
             'client',
+            'responsable',
             'projets.phases',
+            'projets.responsable',
             'documents',
             'sortieStocks.produit',
         ]);
@@ -79,6 +114,7 @@ class ChantierController extends Controller
     // ─── Mise à jour ──────────────────────────────────────────
     public function update(Request $request, Chantier $chantier)
     {
+        $this->assertAccess($chantier, $request->user());
         $validated = $request->validate([
             'client_id'       => 'sometimes|exists:clients,id',
             'nom'             => 'sometimes|required|string|max:255',
@@ -118,8 +154,9 @@ class ChantierController extends Controller
     }
 
     // ─── Projets d'un chantier ────────────────────────────────
-    public function projets(Chantier $chantier)
+    public function projets(Request $request, Chantier $chantier)
     {
+        $this->assertAccess($chantier, $request->user());
         $projets = $chantier->projets()->with('phases')->get();
         return response()->json(['data' => $projets]);
     }
@@ -179,6 +216,12 @@ class ChantierController extends Controller
             'date_fin_prevue'     => $c->date_fin_prevue?->format('d M Y'),
             'architecte'          => $c->architecte,
             'nb_projets'          => $c->projets ? $c->projets->count() : 0,
+            'responsable'         => $c->responsable ? [
+                'id'          => $c->responsable->id,
+                'nom_complet' => $c->responsable->nom_complet,
+                'email'       => $c->responsable->email,
+                'telephone'   => $c->responsable->telephone_mobile ?? $c->responsable->telephone_pro,
+            ] : null,
             'client'              => $c->client ? [
                 'id'         => $c->client->id,
                 'nom'        => $c->client->nom,
@@ -223,6 +266,10 @@ class ChantierController extends Controller
             'date_fin_prevue' => $p->date_fin_prevue?->format('d M Y'),
             'date_debut_raw'  => $p->date_debut?->toDateString(),
             'date_fin_raw'    => $p->date_fin_prevue?->toDateString(),
+            'responsable'     => $p->responsable ? [
+                'id'          => $p->responsable->id,
+                'nom_complet' => $p->responsable->nom_complet,
+            ] : null,
             'nb_phases'       => $p->phases->count(),
             'phases'          => $p->phases->map(fn($ph) => [
                 'id'          => $ph->id,
@@ -244,8 +291,8 @@ class ChantierController extends Controller
             'created_at'   => $d->created_at?->format('d/m/Y'),
         ])->values();
 
-        // Matériaux utilisés (sorties stock)
-        $base['materiaux'] = $c->sortieStocks->map(fn($s) => [
+        // Matériaux utilisés (sorties stock) — le plus récent en premier
+        $base['materiaux'] = $c->sortieStocks->sortByDesc('id')->values()->map(fn($s) => [
             'sortie_id'  => $s->id,
             'projet_id'    => $s->projet_id, 
             'produit'    => $s->produit?->nom,

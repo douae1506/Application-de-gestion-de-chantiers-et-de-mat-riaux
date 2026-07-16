@@ -14,6 +14,7 @@ class Phase extends Model
         'ordre',
         'duree_reelle',
         'date_debut',
+        'date_fin_prevue',
         'date_fin_reelle',
         'progression',
         'responsable',
@@ -36,6 +37,16 @@ class Phase extends Model
 
     protected static function booted()
     {
+        static::saving(function ($phase) {
+            if ($phase->isDirty('statut')) {
+                if ($phase->statut === 'terminee') {
+                    $phase->date_fin_reelle = $phase->date_fin_reelle ?: now();
+                } elseif ($phase->getOriginal('statut') === 'terminee') {
+                    $phase->date_fin_reelle = null;
+                }
+            }
+        });
+
         static::saved(function ($phase) {
             $phase->projet?->updateStatusAndProgress();
         });

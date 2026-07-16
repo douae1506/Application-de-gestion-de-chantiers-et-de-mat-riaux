@@ -116,6 +116,8 @@ class UserController extends Controller
             'password'         => Hash::make($validated['password']),
             'est_actif'        => $validated['est_actif'] ?? true,
         ]);
+        \App\Services\NotificationService::utilisateurCree($user);
+
         return response()->json([
             'message'=>'Utilisateur créé avec succès.',
             'data'=>$user
@@ -124,8 +126,8 @@ class UserController extends Controller
     /**
      * PUT /api/admin/users/{id}
      */
-   public function update(Request $request, User $user): JsonResponse
-{
+    public function update(Request $request, User $user): JsonResponse
+    {
     $validated = $request->validate([
 
         'nom'              => ['sometimes','required','string','max:100'],
@@ -151,7 +153,7 @@ class UserController extends Controller
     if(!empty($validated['password'])){
 
         $validated['password'] = Hash::make($validated['password']);
-
+        
     }else{
 
         unset($validated['password']);
@@ -167,26 +169,30 @@ class UserController extends Controller
         'data'=>$user->fresh()
 
     ]);
-}
+    }
 
     /**
      * DELETE /api/admin/users (suppression multiple)
      */
 
-public function destroy(User $user): JsonResponse
-{
+    public function destroy(User $user): JsonResponse
+    {
     if ($user->id === auth()->id()) {
         return response()->json([
             'message' => 'Impossible de supprimer votre propre compte.'
         ], 403);
     }
 
+    $nomComplet = "{$user->prenom} {$user->nom}";
+
     $user->delete();
+
+    \App\Services\NotificationService::utilisateurSupprime($nomComplet);
 
     return response()->json([
         'message' => 'Utilisateur supprimé avec succès.'
     ]);
-}
+    }
     public function destroyMany(Request $request): JsonResponse
     {
         $request->validate([
@@ -195,8 +201,13 @@ public function destroy(User $user): JsonResponse
         ]);
 
         $ids = collect($request->ids)->reject(fn($id) => $id === auth()->id());
+        $noms = User::whereIn('id', $ids)->get(['nom', 'prenom'])->map(fn ($u) => "{$u->prenom} {$u->nom}");
 
         User::whereIn('id', $ids)->delete();
+
+        foreach ($noms as $nomComplet) {
+            \App\Services\NotificationService::utilisateurSupprime($nomComplet);
+        }
 
         return response()->json([
             'message' => "{$ids->count()} utilisateur(s) supprimé(s) avec succès.",
@@ -221,7 +232,7 @@ public function destroy(User $user): JsonResponse
     }
 
     public function login(Request $request)
-{
+    {
     $request->validate([
         'email'    => 'required|email',
         'password' => 'required',
@@ -238,5 +249,5 @@ public function destroy(User $user): JsonResponse
         'token_type'   => 'Bearer',
         'user'         => $user,
     ]);
-}
+    }  
 }

@@ -7,10 +7,20 @@
         <h1>Gestion des utilisateurs</h1>
         <p>{{ filteredUsers.length }} utilisateur{{ filteredUsers.length > 1 ? 's' : '' }} trouvé{{ filteredUsers.length > 1 ? 's' : '' }}</p>
       </div>
-      <button class="btn-primary" @click="openModal('create')">
-        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
-        Ajouter un utilisateur
-      </button>
+      <div class="page-header-actions">
+        <button class="btn-primary" @click="openModal('create')">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+          Ajouter un utilisateur
+        </button>
+        <ExportToolbar
+          pdf-url="/admin/exports/utilisateurs"
+          :pdf-params="{ search, role: filterRole }"
+          pdf-filename="utilisateurs"
+          :excel-columns="excelColumns"
+          :excel-rows="filteredUsers"
+          excel-filename="utilisateurs"
+        />
+      </div>
     </div>
 
     <!-- Stats -->
@@ -400,6 +410,15 @@
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
 import userService from '@/services/userService'
+import ExportToolbar from '@/components/ExportToolbar.vue'
+
+const excelColumns = [
+  { key: 'nom_complet', label: 'Nom complet', value: (r) => r.nom_complet || `${r.prenom || ''} ${r.nom || ''}`.trim() },
+  { key: 'email', label: 'Email' },
+  { key: 'role', label: 'Rôle' },
+  { key: 'telephone', label: 'Téléphone', value: (r) => r.telephone_mobile || r.telephone_pro || '—' },
+  { key: 'est_actif', label: 'Statut', value: (r) => (r.est_actif ? 'Actif' : 'Inactif') },
+]
 
 // ── Data ──────────────────────────────────────────────────────────
 const users = ref([])
@@ -490,7 +509,7 @@ const form = reactive({
 
 const roleOptions = [
   { value:'admin', label:'Administrateur', bg:'rgba(99,102,241,0.12)', color:'#6366f1', icon:'M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' },
-  { value:'responsable', label:'Responsable', bg:'#ECFDF5', color:'#059669', icon:'M10 2a4 4 0 100 8 4 4 0 000-8z...' },
+  { value:'responsable', label:'Responsable', bg:'#ECFDF5', color:'#059669', icon:'M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z' },
   { value:'chef_projet', label:'Chef de Projet', bg:'rgba(248,87,166,0.12)', color:'#f857a6', icon:'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
   { value:'magasinier', label:'Magasinier', bg:'rgba(251,146,60,0.12)', color:'#fb923c', icon:'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' },
 ]
@@ -550,6 +569,8 @@ async function saveUser() {
 
     if (modalMode.value === 'create') {
       await userService.createUser(formData)
+      search.value = ''
+      filterRole.value = ''
     } else {
       await userService.updateUser(form.id, formData)
     }
@@ -629,6 +650,7 @@ function handleImage(event) {
 <style scoped>
 /* ── Page header ──────────────────────────────── */
 .page-header { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:1rem;flex-wrap:wrap; }
+.page-header-actions { display:flex;align-items:center;gap:.7rem;flex-wrap:wrap; }
 .page-header h1 { font-size:1.4rem;font-weight:700;color:#1e2a4a;margin:0 0 .2rem; }
 .page-header p { font-size:.875rem;color:#8a94b2;margin:0; }
 .btn-primary { display:flex;align-items:center;gap:.4rem;padding:.6rem 1.1rem;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:10px;color:#fff;font-size:.875rem;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(99,102,241,.3);transition:opacity .15s;white-space:nowrap; }

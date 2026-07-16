@@ -17,6 +17,9 @@ use App\Http\Controllers\FournisseurController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ExportController;
+use App\Http\Controllers\PrintController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
@@ -31,6 +34,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me',      [AuthController::class, 'me']);
 
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::put('/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::put('/read-all', [NotificationController::class, 'markAllAsRead']);
+    });
     // ────────────────────────────────────────────────────────────────
     // Espace applicatif partagé : admin, responsable, chef_projet et
     // magasinier accèdent tous à ces routes. L'accès fin est contrôlé
@@ -144,6 +153,26 @@ Route::middleware('auth:sanctum')->group(function () {
         });
         Route::middleware('permission:create_transfert')->post('mouvements/transfert', [MouvementController::class, 'transfert']);
         Route::middleware('permission:delete_mouvement')->delete('mouvements/{mouvement}', [MouvementController::class, 'destroy']);
+
+        // ─── EXPORTS PDF ─────────────────────────────────────────
+        Route::prefix('exports')->group(function () {
+            Route::middleware('permission:view_chantiers')->get('chantiers',    [ExportController::class, 'chantiers']);
+            Route::middleware('permission:view_projets')->get('projets',       [ExportController::class, 'projets']);
+            Route::middleware('permission:view_produits')->get('produits',     [ExportController::class, 'produits']);
+            Route::middleware('permission:view_stocks')->get('stocks',         [ExportController::class, 'stocks']);
+            Route::middleware('permission:view_mouvements')->get('entrees',    [ExportController::class, 'entrees']);
+            Route::middleware('permission:view_mouvements')->get('sorties',    [ExportController::class, 'sorties']);
+            Route::middleware('permission:view_mouvements')->get('transferts', [ExportController::class, 'transferts']);
+            Route::middleware('permission:view_users')->get('utilisateurs',    [ExportController::class, 'utilisateurs']);
+        });
+
+        // ─── IMPRESSION (bons + liste stock personnalisée) ──────
+        Route::prefix('print')->group(function () {
+            Route::middleware('permission:view_mouvements')->get('bon-entree/{entree}',       [PrintController::class, 'bonEntree']);
+            Route::middleware('permission:view_mouvements')->get('bon-sortie/{sortie}',       [PrintController::class, 'bonSortie']);
+            Route::middleware('permission:view_mouvements')->get('bon-transfert/{transfert}', [PrintController::class, 'bonTransfert']);
+            Route::middleware('permission:view_stocks')->get('stock-personnalise',            [PrintController::class, 'stockPersonnalise']);
+        });
 
         // ─── RAPPORTS (réservé admin, aucune permission dédiée dans la matrice) ──
         Route::middleware('role:admin')->group(function () {

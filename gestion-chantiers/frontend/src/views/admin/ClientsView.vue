@@ -1,8 +1,3 @@
-Voici le code complet corrigé et harmonisé sur le même modèle que la page des projets.
-
-Les icônes SVG dans le bouton d'ajout (`.page-header .btn-primary`) et les boutons d'action de la table et des cartes ont été ajustés avec des classes dédiées (`.btn-icon-svg` et `.action-icon-svg`) afin d'éviter tout étirement ou problème d'alignement Flexbox, notamment sur mobile.
-
-```vue
 <template>
   <div class="clients-page">
 
@@ -11,7 +6,7 @@ Les icônes SVG dans le bouton d'ajout (`.page-header .btn-primary`) et les bout
         <h1>Gestion des clients</h1>
         <p>{{ filteredClients.length }} client{{ filteredClients.length > 1 ? 's' : '' }} trouvé{{ filteredClients.length > 1 ? 's' : '' }}</p>
       </div>
-      <button class="btn btn-primary" @click="openModal('create')">
+      <button v-if="auth.hasPermission('create_clients')" class="btn btn-primary" @click="openModal('create')">
         <svg viewBox="0 0 20 20" fill="currentColor" class="btn-icon-svg"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
         Ajouter un client
       </button>
@@ -64,7 +59,7 @@ Les icônes SVG dans le bouton d'ajout (`.page-header .btn-primary`) et les bout
             </tr>
           </thead>
           <tbody>
-            <tr v-for="c in paginatedClients" :key="c.id" @click="goToProfile(c)" :class="{ selected: selected.includes(c.id) }" style="cursor: pointer;">
+            <tr v-for="c in paginatedClients" :key="c.id" @click="goToProfile(c)" :class="{ selected: selected.includes(c.id) }" :style="{ cursor: auth.role === 'admin' ? 'pointer' : 'default' }">
               <td @click.stop><input type="checkbox" :value="c.id" v-model="selected" /></td>
               <td>
                 <div class="client-cell">
@@ -90,11 +85,11 @@ Les icônes SVG dans le bouton d'ajout (`.page-header .btn-primary`) et les bout
                 </button>
               </td>
               <td>
-                <div class="action-btns">
-                  <button class="btn-action edit" @click.stop="openModal('edit', c)" title="Modifier">
+                <div class="action-btns" v-if="auth.hasPermission('edit_clients') || auth.hasPermission('delete_clients')">
+                  <button v-if="auth.hasPermission('edit_clients')" class="btn-action edit" @click.stop="openModal('edit', c)" title="Modifier">
                     <svg viewBox="0 0 20 20" fill="currentColor" class="action-icon-svg"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
                   </button>
-                  <button class="btn-action delete" @click.stop="confirmDelete(c)" title="Supprimer">
+                  <button v-if="auth.hasPermission('delete_clients')" class="btn-action delete" @click.stop="confirmDelete(c)" title="Supprimer">
                     <svg viewBox="0 0 20 20" fill="currentColor" class="action-icon-svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
                   </button>
                 </div>
@@ -139,11 +134,11 @@ Les icônes SVG dans le bouton d'ajout (`.page-header .btn-primary`) et les bout
           <h4>{{ c.prenom }} {{ c.nom }}</h4>
           <p class="cc-email text-muted">{{ c.email }}</p>
           <span class="type-badge" :class="'type-' + c.type_client">{{ typeLabel(c.type_client) }}</span>
-          <div class="cc-actions">
-            <button class="btn-action edit" @click.stop="openModal('edit', c)">
+          <div class="cc-actions" v-if="auth.hasPermission('edit_clients') || auth.hasPermission('delete_clients')">
+            <button v-if="auth.hasPermission('edit_clients')" class="btn-action edit" @click.stop="openModal('edit', c)">
               <svg viewBox="0 0 20 20" fill="currentColor" class="action-icon-svg"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
             </button>
-            <button class="btn-action delete" @click.stop="confirmDelete(c)">
+            <button v-if="auth.hasPermission('delete_clients')" class="btn-action delete" @click.stop="confirmDelete(c)">
               <svg viewBox="0 0 20 20" fill="currentColor" class="action-icon-svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
             </button>
           </div>
@@ -279,8 +274,10 @@ Les icônes SVG dans le bouton d'ajout (`.page-header .btn-primary`) et les bout
 import clientService from '@/services/clientService'
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const auth = useAuthStore()
 
 // ── Données ──────────────────────────────────────────────────
 const clients = ref([])
@@ -363,7 +360,11 @@ function cardGradient(type) {
 }
 
 // ── Navigation ──────────────────────────────────────────────
+// Seul l'admin a accès à la fiche détaillée d'un client : pour les
+// autres rôles (ex. responsable), le clic ne doit rien faire au lieu
+// d'ouvrir une page vide.
 function goToProfile(client) {
+  if (auth.role !== 'admin') return
   router.push({ name: 'client-profile', params: { id: client.id } })
 }
 
@@ -473,6 +474,11 @@ async function saveClient() {
 
     if (modalMode.value === 'create') {
       await clientService.createClient(data)
+      // Réinitialiser les filtres pour afficher la liste complète non filtrée
+      search.value = ''
+      filterType.value = ''
+      filterStatus.value = ''
+      currentPage.value = 1
     } else {
       await clientService.updateClient(form.id, data)
     }
@@ -735,5 +741,3 @@ async function doDelete() {
   .client-cards { grid-template-columns: 1fr; }
 }
 </style>
-
-```

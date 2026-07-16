@@ -10,23 +10,50 @@ class ProjetController extends Controller
     /**
      * Afficher la liste des projets (optionnel).
      */
-    public function index()
+    public function index(Request $request)
 {
-    $projets = Projet::with([
+    $user = $request->user();
+
+    $query = Projet::with([
     'chantier',
     'phases',
     'expenses',
     'responsable'
-])->get();
+    ]);
+
+    // ─── Cloisonnement par rôle ────────────────────────────
+    // "chef_projet" : uniquement les projets dont il est responsable.
+    // "responsable" : uniquement les projets appartenant à un chantier
+    // dont il est le responsable.
+    if ($user) {
+        if ($user->role === 'chef_projet') {
+            $query->where('responsable_id', $user->id);
+        } elseif ($user->role === 'responsable') {
+            $query->whereHas('chantier', function ($q) use ($user) {
+                $q->where('responsable_id', $user->id);
+            });
+        }
+    }
+
+    $projets = $query->get();
     return response()->json($this->formatProjets($projets));
 }
 
     /**
      * Afficher un projet spécifique avec ses phases.
      */
-    public function show(Projet $projet)
+    public function show(Request $request, Projet $projet)
     {
         $projet->load(['phases', 'chantier', 'responsable', 'expenses']);
+        $user = $request->user();
+        if ($user) {
+            if ($user->role === 'chef_projet' && $projet->responsable_id !== $user->id) {
+                abort(403, "Vous n'avez pas accès à ce projet.");
+            }
+            if ($user->role === 'responsable' && $projet->chantier?->responsable_id !== $user->id) {
+                abort(403, "Vous n'avez pas accès à ce projet.");
+            }
+        }
         return response()->json([
             'data' => $this->formatProjetDetail($projet)
         ]);
@@ -52,14 +79,37 @@ class ProjetController extends Controller
             'responsable_id'  => 'nullable|exists:users,id' ,
         ]);
 
-        // Générer une référence
+        // Générer une référence unique.
+        // Ancien code : basé sur COUNT(*), donc si un projet du chantier a été
+        // supprimé, le compteur redescend et régénère une référence déjà
+        // utilisée -> violation de contrainte unique. On se base plutôt sur
+        // le plus grand numéro déjà attribué pour ce chantier.
         $chantier = \App\Models\Chantier::find($validated['chantier_id']);
-        $count = $chantier->projets()->count() + 1;
-        $validated['reference'] = sprintf('PRJ-%d-%03d', $chantier->id, $count);
         $validated['statut'] = 'non_commence';
         $validated['progression'] = 0;
 
-        $projet = Projet::create($validated);
+        $attempts = 0;
+        do {
+            $lastNumber = \App\Models\Projet::where('chantier_id', $chantier->id)
+                ->where('reference', 'like', "PRJ-{$chantier->id}-%")
+                ->get()
+                ->map(fn ($p) => (int) substr($p->reference, strrpos($p->reference, '-') + 1))
+                ->max();
+
+            $nextNumber = ($lastNumber ?? 0) + 1 + $attempts;
+            $validated['reference'] = sprintf('PRJ-%d-%03d', $chantier->id, $nextNumber);
+
+            try {
+                $projet = Projet::create($validated);
+                break;
+            } catch (\Illuminate\Database\QueryException $e) {
+                $attempts++;
+                if ($attempts >= 5) {
+                    throw $e;
+                }
+            }
+        } while (true);
+
         return response()->json([
             'success' => true,
             'message' => 'Projet créé avec succès',
@@ -73,6 +123,8 @@ class ProjetController extends Controller
     public function update(Request $request, Projet $projet)
     {
         $validated = $request->validate([
+            'chantier_id' => 'sometimes|exists:chantiers,id',
+            'responsable_id' => 'nullable|exists:users,id',
             'nom' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'categorie' => 'sometimes|string|max:255',
@@ -143,11 +195,11 @@ public function byChantier($chantierId)
     private function formatProjetDetail(Projet $projet)
     {
         $projet->load([
-    'phases',
-    'chantier',
-    'expenses',
-    'responsable'
-]);
+        'phases',
+        'chantier',
+        'expenses',
+        'responsable'
+        ]);
         return [
             'id' => $projet->id,
             'reference' => $projet->reference,
@@ -200,11 +252,11 @@ public function byChantier($chantierId)
                 'date'    => $e->date ? \Carbon\Carbon::parse($e->date)->format('Y-m-d') : null,
             ])->values(),
             'responsable' => $projet->responsable ? [
-    'id'      => $projet->responsable->id,
-    'prenom'  => $projet->responsable->prenom,
-    'nom'     => $projet->responsable->nom,
-    'email'   => $projet->responsable->email,
-] : null,
-        ];
+                'id'      => $projet->responsable->id,
+                'prenom'  => $projet->responsable->prenom,
+                'nom'     => $projet->responsable->nom,
+                'email'   => $projet->responsable->email,
+            ] : null,
+            ];
     }
 }

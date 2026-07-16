@@ -1,9 +1,6 @@
 <template>
   <div class="admin-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
 
-    <!-- ══════════════════════════════════════════
-         SIDEBAR (Sticky + défilement interne)
-    ══════════════════════════════════════════ -->
     <aside class="sidebar" :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileOpen }">
 
       <!-- Brand -->
@@ -101,9 +98,6 @@
           </div>
           <span>Entrées / Sorties</span>
         </RouterLink>
-
-        <p class="nav-section-label">RAPPORTS</p>
-
         <RouterLink v-if="auth.isAdmin" to="/admin/historique" class="nav-item" active-class="active">
           <div class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -146,10 +140,7 @@
           </div>
         </div>
         <div class="topbar-right">
-          <button class="topbar-icon-btn notif-btn" title="Notifications">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
-            <span class="notif-dot"></span>
-          </button>
+          <NotificationBell />
           <div class="topbar-avatar" title="Mon profil">{{ initials }}</div>
         </div>
       </header>
@@ -166,6 +157,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import NotificationBell from '@/components/NotificationBell.vue'
 
 const auth   = useAuthStore()
 const router = useRouter()
@@ -418,12 +410,6 @@ async function handleLogout() {
 }
 .topbar-icon-btn:hover { background: var(--primary-cyan); color: var(--primary-blue); border-color: var(--primary-blue); }
 .topbar-icon-btn svg { width: 18px; height: 18px; }
-
-.notif-dot {
-  position: absolute; top: 9px; right: 9px;
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #ef4444; border: 1.5px solid #fff;
-}
 
 .topbar-avatar {
   width: 36px; height: 36px; border-radius: 8px;

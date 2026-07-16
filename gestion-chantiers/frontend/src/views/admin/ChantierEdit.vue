@@ -19,7 +19,7 @@
         <div class="top-bar">
           <div class="breadcrumb">
             Chantiers &gt; 
-            <span @click="$router.push({ name: 'chantiers' })" style="cursor:pointer;">Liste</span> &gt; 
+            <span @click="$router.push({ name: 'AdminChantiers' })" style="cursor:pointer;">Liste</span> &gt; 
             <span @click="$router.push({ name: 'chantier-detail', params: { id: chantier.id } })" style="cursor:pointer;">{{ chantier.nom }}</span> &gt; 
             <span class="active">Modification</span>
           </div>

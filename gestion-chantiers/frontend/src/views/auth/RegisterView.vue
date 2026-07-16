@@ -1,10 +1,3 @@
-Voici le code de votre composant d'inscription mis à jour. J'ai harmonisé toute l'identité visuelle (fonds en dégradé subtil, design des cartes, typographies, styles des boutons, des inputs et des alertes) pour qu'elle corresponde exactement à celle de votre page de connexion.
-
-Pour les éléments spécifiques à l'inscription (la grille sur deux colonnes `row-2` et les sélections de rôles), le design a été adapté proprement avec la même palette de couleurs (le bleu `#2563eb`) et les mêmes ombres portées.
-
-### Le code mis à jour pour l'Inscription
-
-```vue
 <template>
   <div class="auth-layout">
     <div class="auth-card">
@@ -145,13 +138,7 @@ const loading      = ref(false)
 const showPassword = ref(false)
 
 const roles = [
-  {
-    value: 'admin',
-    label: 'Administrateur',
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 2L3.5 7.5v9L12 22l8.5-5.5v-9L12 2z"/><circle cx="12" cy="12" r="3"/>
-    </svg>`,
-  },
+  
   {
     value: 'responsable',
     label: 'Responsable',
@@ -260,5 +247,3 @@ async function handleRegister() {
 
 @media (max-width:480px) { .auth-layout { background:#fff; align-items:flex-start; padding-top:2rem; } .auth-card { border:none; box-shadow:none; padding:1rem; } .row-2 { grid-template-columns: 1fr; gap: 0; } }
 </style>
-
-```

@@ -1,10 +1,3 @@
-Voici la refonte complète de votre composant Utilisateur avec la même identité visuelle **"Midnight & Emerald"** (style CRM SaaS Premium / Shadcn).
-
-J'ai retiré les émojis des cartes (qui faisaient un peu "amateur"), épuré la grille d'informations, ajouté un formateur de date professionnel et implémenté le style asymétrique minimaliste avec des bordures ultra-fines.
-
-### Le Code Refondu
-
-```vue
 <template>
   <div class="crm-viewport" v-if="user">
 
@@ -377,5 +370,3 @@ function roleLabel(role){
   .btn { flex: 1; text-align: center; }
 }
 </style>
-
-```

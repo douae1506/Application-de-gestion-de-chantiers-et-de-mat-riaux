@@ -11,6 +11,7 @@ use App\Models\Transfert;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\ProjectExpense;
+use App\Services\NotificationService;
 
 class MouvementController extends Controller
 {
@@ -135,8 +136,9 @@ class MouvementController extends Controller
 
         $stock = Stock::findOrFail($validated['stock_id']);
         $recap = [];
+        $notifsEntree = [];
 
-        DB::transaction(function () use ($validated, $stock, &$recap) {
+        DB::transaction(function () use ($validated, $stock, &$recap, &$notifsEntree) {
             foreach ($validated['lignes'] as $ligne) {
                 $produit = Produit::findOrFail($ligne['produit_id']);
                 $prixUnitaire = $ligne['prix_unitaire'] ?? $produit->prix_unitaire;
@@ -156,11 +158,15 @@ class MouvementController extends Controller
 
                 $existing = $stock->produits()->where('produit_id', $produit->id)->first();
                 if ($existing) {
+                    $nouvelleQte = $existing->pivot->quantite + $ligne['quantite'];
+                    $seuilRetenu = $stockMinimum ?: $existing->pivot->stock_minimum;
                     $stock->produits()->updateExistingPivot($produit->id, [
-                        'quantite' => $existing->pivot->quantite + $ligne['quantite'],
+                        'quantite' => $nouvelleQte,
                         'stock_minimum' => $stockMinimum,
                     ]);
                 } else {
+                    $nouvelleQte = $ligne['quantite'];
+                    $seuilRetenu = $stockMinimum;
                     $stock->produits()->attach($produit->id, [
                         'quantite' => $ligne['quantite'],
                         'stock_minimum' => $stockMinimum,
@@ -173,8 +179,25 @@ class MouvementController extends Controller
                 }
 
                 $recap[] = "{$ligne['quantite']} {$produit->unite}(s) de {$produit->nom}";
+
+                $notifsEntree[] = [
+                    'produit'  => $produit,
+                    'quantite' => $ligne['quantite'],
+                    'nouvelle_qte' => $nouvelleQte,
+                    'seuil'    => $seuilRetenu,
+                ];
             }
         });
+
+        foreach ($notifsEntree as $n) {
+            NotificationService::stockEntree($stock, $n['produit'], $n['quantite']);
+
+            if ($n['nouvelle_qte'] <= 0) {
+                NotificationService::stockRupture($stock, $n['produit']);
+            } elseif ($n['seuil'] > 0 && $n['nouvelle_qte'] <= $n['seuil']) {
+                NotificationService::stockSeuilAtteint($stock, $n['produit'], $n['nouvelle_qte'], $n['seuil']);
+            }
+        }
 
         $nbLignes = count($validated['lignes']);
         $message = $nbLignes > 1
@@ -212,12 +235,17 @@ class MouvementController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($validated, $produit, $stock, $dispo) {
+        $nouvelleQte = 0;
+        $seuilRetenu = $pivot?->pivot->stock_minimum ?? 0;
+        $chantier = null;
+
+        DB::transaction(function () use ($validated, $produit, $stock, $dispo, &$nouvelleQte, &$chantier) {
 
             $nouvelleQte = $dispo - $validated['quantite'];
             $stock->produits()->updateExistingPivot($produit->id, ['quantite' => $nouvelleQte]);
 
             $sortie = SortieStock::create($validated);   // <-- création avant le if
+            $chantier = $sortie->chantier;
 
             if (!empty($validated['projet_id'])) {
                 $cout = $validated['quantite'] * $produit->prix_unitaire;
@@ -233,6 +261,15 @@ class MouvementController extends Controller
 
             $this->refreshStatutProduit($produit);
         });
+
+        // Notifications (hors transaction pour ne jamais bloquer l'écriture stock)
+        NotificationService::stockSortie($stock, $produit, $validated['quantite'], $chantier);
+
+        if ($nouvelleQte <= 0) {
+            NotificationService::stockRupture($stock, $produit);
+        } elseif ($seuilRetenu > 0 && $nouvelleQte <= $seuilRetenu) {
+            NotificationService::stockSeuilAtteint($stock, $produit, $nouvelleQte, $seuilRetenu);
+        }
 
         return response()->json([
             'success' => true,
@@ -278,12 +315,18 @@ class MouvementController extends Controller
                     'message' => "Stock insuffisant pour {$produit->nom} dans {$source->nom}. Disponible : {$dispo} {$produit->unite}(s)",
                 ], 422);
             }
-            $produitsParLigne[] = ['produit' => $produit, 'quantite' => $ligne['quantite'], 'dispo' => $dispo];
+            $produitsParLigne[] = [
+                'produit' => $produit,
+                'quantite' => $ligne['quantite'],
+                'dispo' => $dispo,
+                'pivot_seuil' => $pivotSource?->pivot->stock_minimum ?? 0,
+            ];
         }
 
         $recap = [];
+        $notifsTransfert = [];
 
-        DB::transaction(function () use ($validated, $source, $destination, $produitsParLigne, &$recap) {
+        DB::transaction(function () use ($validated, $source, $destination, $produitsParLigne, &$recap, &$notifsTransfert) {
             foreach ($produitsParLigne as $item) {
                 $produit = $item['produit'];
 
@@ -296,7 +339,8 @@ class MouvementController extends Controller
                     'observations'         => $validated['observations'] ?? null,
                 ]);
 
-                $source->produits()->updateExistingPivot($produit->id, ['quantite' => $item['dispo'] - $item['quantite']]);
+                $nouvelleQteSource = $item['dispo'] - $item['quantite'];
+                $source->produits()->updateExistingPivot($produit->id, ['quantite' => $nouvelleQteSource]);
 
                 $pivotDest = $destination->produits()->where('produit_id', $produit->id)->first();
                 if ($pivotDest) {
@@ -311,8 +355,26 @@ class MouvementController extends Controller
                 }
 
                 $recap[] = "{$item['quantite']} {$produit->unite}(s) de {$produit->nom}";
+
+                $notifsTransfert[] = [
+                    'produit'      => $produit,
+                    'quantite'     => $item['quantite'],
+                    'nouvelle_qte' => $nouvelleQteSource,
+                    'seuil'        => $item['pivot_seuil'] ?? 0,
+                ];
             }
         });
+
+        // Notifications (hors transaction pour ne jamais bloquer l'écriture stock)
+        foreach ($notifsTransfert as $n) {
+            NotificationService::stockTransfert($n['produit'], $n['quantite'], $source, $destination);
+
+            if ($n['nouvelle_qte'] <= 0) {
+                NotificationService::stockRupture($source, $n['produit']);
+            } elseif ($n['seuil'] > 0 && $n['nouvelle_qte'] <= $n['seuil']) {
+                NotificationService::stockSeuilAtteint($source, $n['produit'], $n['nouvelle_qte'], $n['seuil']);
+            }
+        }
 
         $nbLignes = count($produitsParLigne);
         $message = $nbLignes > 1
@@ -335,7 +397,7 @@ class MouvementController extends Controller
     }
 
     public function affecterSortieAProjet(Request $request, SortieStock $sortie)
-{
+    {
     $request->validate([
         'projet_id' => 'required|exists:projets,id',
         'quantite'  => 'nullable|integer|min:1|max:' . $sortie->quantite,
@@ -387,12 +449,13 @@ class MouvementController extends Controller
         ]);
     });
 
-    return response()->json(['success' => true, 'message' => 'Sortie affectée au projet.']);
-}
+    NotificationService::materielValide($sortie->fresh(['chantier', 'projet', 'produit']));
 
-// ─── Annulation groupée (retour au stock de plusieurs sorties) ──
-public function retourStockBulk(Request $request)
-{
+    return response()->json(['success' => true, 'message' => 'Sortie affectée au projet.']);
+    }
+
+    public function retourStockBulk(Request $request)
+    {
     $request->validate([
         'sortie_ids'   => 'required|array|min:1',
         'sortie_ids.*' => 'integer|exists:sortie_stocks,id',
@@ -402,7 +465,7 @@ public function retourStockBulk(Request $request)
     $erreurs = [];
 
     foreach ($request->sortie_ids as $sortieId) {
-        $sortie = SortieStock::find($sortieId);
+        $sortie = SortieStock::with(['chantier', 'produit'])->find($sortieId);
         if (!$sortie) continue;
 
         if ($sortie->projet_id) {
@@ -426,6 +489,8 @@ public function retourStockBulk(Request $request)
             $sortie->delete();
         });
 
+        NotificationService::demandeMaterielAnnulee($sortie);
+
         $traitees++;
     }
 
@@ -436,9 +501,11 @@ public function retourStockBulk(Request $request)
             : ($traitees === 1 ? 'Produit retourné au stock.' : 'Aucun produit retourné.'),
         'erreurs'  => $erreurs,
     ]);
-}
-public function retourStock(SortieStock $sortie)
-{
+    }
+    public function retourStock(SortieStock $sortie)
+    {
+    $sortie->load(['chantier', 'produit']);
+
     DB::transaction(function () use ($sortie) {
         // 1. Remettre la quantité dans le stock
         $stock = $sortie->stock;
@@ -467,6 +534,8 @@ public function retourStock(SortieStock $sortie)
         $sortie->delete();
     });
 
+    NotificationService::demandeMaterielAnnulee($sortie);
+
     return response()->json(['success' => true, 'message' => 'Sortie annulée, stock restitué.']);
-}
+    }
 }

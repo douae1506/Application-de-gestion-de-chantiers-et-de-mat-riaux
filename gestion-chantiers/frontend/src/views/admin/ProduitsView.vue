@@ -4,12 +4,21 @@
     <div class="pv-header">
       <div>
         <h1>Catalogue Produits</h1>
-        <p>Gérez les fiches produits (nom, catégorie, prix unitaire) et associez-les à des fournisseurs</p>
       </div>
-      <button class="btn btn-primary" @click="openCreateModal">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        Nouveau produit
-      </button>
+      <div class="pv-header-actions">
+        <button v-if="auth.hasPermission('create_produits')" class="btn btn-primary" @click="openCreateModal">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Nouveau produit
+        </button>
+        <ExportToolbar
+          pdf-url="/admin/exports/produits"
+          :pdf-params="{ search, categorie: filtreCategorie }"
+          pdf-filename="produits"
+          :excel-columns="excelColumns"
+          :excel-rows="produits"
+          excel-filename="produits"
+        />
+      </div>
     </div>
 
     <div class="stat-grid">
@@ -118,11 +127,11 @@
                 <span v-else class="text-muted">—</span>
               </td>
               <td>
-                <div class="action-btns">
-                  <button class="btn-action edit" @click="openEditModal(p)" title="Modifier">
+                <div class="action-btns" v-if="auth.hasPermission('edit_produits') || auth.hasPermission('delete_produits')">
+                  <button v-if="auth.hasPermission('edit_produits')" class="btn-action edit" @click="openEditModal(p)" title="Modifier">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                   </button>
-                  <button class="btn-action delete" @click="supprimer(p.id)" title="Supprimer">
+                  <button v-if="auth.hasPermission('delete_produits')" class="btn-action delete" @click="supprimer(p.id)" title="Supprimer">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                   </button>
                 </div>
@@ -135,7 +144,7 @@
         <span>📦</span>
         <h3>Aucun produit</h3>
         <p>Commencez par créer vos premiers produits dans le catalogue.</p>
-        <button class="btn btn-primary" @click="openCreateModal">+ Créer un produit</button>
+        <button v-if="auth.hasPermission('create_produits')" class="btn btn-primary" @click="openCreateModal">+ Créer un produit</button>
       </div>
     </div>
 
@@ -239,6 +248,21 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
+import ExportToolbar from '@/components/ExportToolbar.vue'
+
+const excelColumns = [
+  { key: 'nom', label: 'Nom' },
+  { key: 'categorie', label: 'Catégorie', value: (r) => r.categorie || '—' },
+  { key: 'unite', label: 'Unité', value: (r) => r.unite || '—' },
+  { key: 'prix_unitaire', label: 'Prix unitaire (DH)' },
+  { key: 'stock_total', label: 'Stock total' },
+  { key: 'valeur_stock', label: 'Valeur stock (DH)' },
+  { key: 'statut', label: 'Statut', value: (r) => r.statut || '—' },
+  { key: 'alerte_stock', label: 'Alerte stock', value: (r) => (r.alerte_stock ? 'Oui' : 'Non') },
+]
+
+const auth = useAuthStore()
 
 const produits = ref([])
 const categories = ref([])
@@ -387,6 +411,7 @@ onMounted(async () => {
 <style scoped>
 .pv-wrap { min-height: 100vh; background: #f8fafc; margin: -42px !important; padding: 1.5rem; font-family: ui-sans-serif, system-ui, sans-serif; }
 .pv-header { display: flex; justify-content: space-between; align-items: center; padding: 0 0 1.5rem; }
+.pv-header-actions { display: flex; align-items: center; gap: 0.7rem; }
 .pv-header h1 { margin: 0 0 .25rem; font-size: 1.75rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
 .pv-header p { margin: 0; color: #64748b; font-size: .92rem; }
 

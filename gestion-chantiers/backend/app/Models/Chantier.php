@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Http\Controllers\ActivityController;
+use App\Services\NotificationService;
 
 class Chantier extends Model
 {
@@ -51,6 +52,12 @@ class Chantier extends Model
         return $this->belongsTo(Client::class);
     }
 
+    // Utilisateur (rôle "responsable") en charge de ce chantier
+    public function responsable()
+    {
+        return $this->belongsTo(User::class, 'responsable_id');
+    }
+
     // Un chantier possède plusieurs projets
     public function projets()
     {
@@ -69,27 +76,27 @@ class Chantier extends Model
         return $this->hasMany(Event::class);
     }
     
-       public function getJoursRestantsAttribute(): int
-        {
+    public function getJoursRestantsAttribute(): int
+    {
             if (!$this->date_fin_prevue) return 0;
             return max(0, (int) now()->diffInDays($this->date_fin_prevue, false));
-        }
-    
-        /** Budget restant */
-        public function getBudgetRestantAttribute(): float
-        {
+    }
+
+    /** Budget restant */
+    public function getBudgetRestantAttribute(): float
+    {
             return max(0, (float) $this->budget_total - (float) $this->cout_reel);
-        }
-    
-        /** Pourcentage dépensé */
-        public function getPourcentageDepenseAttribute(): int
-        {
+    }
+
+    /** Pourcentage dépensé */
+    public function getPourcentageDepenseAttribute(): int
+    {
             if (!$this->budget_total || $this->budget_total == 0) return 0;
             return (int) min(100, round(($this->cout_reel / $this->budget_total) * 100));
-        }
-    
-        public function getStatutLabelAttribute(): string
-        {
+    }
+
+    public function getStatutLabelAttribute(): string
+    {
             return match($this->statut) {
                 'planifie'  => 'Planifié',
                 'en_cours'  => 'En cours',
@@ -98,11 +105,11 @@ class Chantier extends Model
                 'annule'    => 'Annulé',
                 default     => ucfirst($this->statut),
             };
-        }
-    
-        /** Label type lisible */
-        public function getTypeLabelAttribute(): string
-        {
+    }
+
+    /** Label type lisible */
+    public function getTypeLabelAttribute(): string
+    {
             return match($this->type) {
                 'residentiel' => 'Résidentiel',
                 'commercial'  => 'Commercial',
@@ -110,10 +117,10 @@ class Chantier extends Model
                 'public'      => 'Public',
                 default       => ucfirst($this->type),
             };
-        }
+    }
     
         /** Auto-génère la prochaine référence */
-        public static function genererReference(): string
+    public static function genererReference(): string
     {
         $annee = now()->year;
     
@@ -129,16 +136,17 @@ class Chantier extends Model
         return sprintf("CHT-%d-%03d", $annee, $numero + 1);
     } // ─── Scopes ───────────────────────────────────────
     
-        public function scopeSearch($query, string $term)
-        {
+    public function scopeSearch($query, string $term)
+    {
             return $query->where(function ($q) use ($term) {
                 $q->where('nom',       'like', "%{$term}%")
                   ->orWhere('reference', 'like', "%{$term}%")
                   ->orWhere('ville',     'like', "%{$term}%")
                   ->orWhereHas('client', fn($c) => $c->where('nom', 'like', "%{$term}%"));
             });
-        }
-        public function calculerProgression()
+    }
+
+    public function calculerProgression()
     {
         if ($this->projets()->count() == 0) {
             return 0;
@@ -150,9 +158,9 @@ class Chantier extends Model
     }
     
     public function calculerCoutReel(): float
-        {
+    {
              return (float) $this->projets->sum('cout_reel');
-        }
+    }
     
     public function updateCoutReel(): void
     {
@@ -202,8 +210,18 @@ class Chantier extends Model
     }
 
     // app/Models/Chantier.php
-protected static function booted()
-{
+    protected static function booted()
+    {
+    static::saving(function ($chantier) {
+        if ($chantier->isDirty('statut')) {
+            if ($chantier->statut === 'termine') {
+                $chantier->date_fin_reelle = $chantier->date_fin_reelle ?: now();
+            } elseif ($chantier->getOriginal('statut') === 'termine') {
+                $chantier->date_fin_reelle = null;
+            }
+        }
+    });
+
     static::created(function ($chantier) {
         ActivityController::log(
             auth()->id(),
@@ -214,6 +232,8 @@ protected static function booted()
             "a créé le chantier « {$chantier->nom} »",
             ['reference' => $chantier->reference, 'type' => $chantier->type]
         );
+
+        NotificationService::chantierCree($chantier);
     });
 
     static::updated(function ($chantier) {
@@ -236,6 +256,19 @@ protected static function booted()
                 "a modifié le chantier « {$chantier->nom} »",
                 $dirty
             );
+
+            // Le chantier vient de passer au statut "terminé"
+            if (isset($dirty['statut']) && $chantier->statut === 'termine') {
+                NotificationService::chantierTermine($chantier);
+            } elseif (!(count($dirty) === 1 && isset($dirty['statut']))) {
+                // On évite de notifier "modifié" pour les simples recalculs
+                // automatiques de progression/coût déclenchés par les projets.
+                $champsAuto = ['progression', 'cout_reel', 'statut'];
+                $champsMetier = array_diff(array_keys($dirty), $champsAuto);
+                if (!empty($champsMetier)) {
+                    NotificationService::chantierModifie($chantier);
+                }
+            }
         }
     });
 
@@ -249,6 +282,8 @@ protected static function booted()
             "a supprimé le chantier « {$chantier->nom} »",
             ['reference' => $chantier->reference]
         );
+
+        NotificationService::chantierSupprime($chantier);
     });
-}
+    }
 }

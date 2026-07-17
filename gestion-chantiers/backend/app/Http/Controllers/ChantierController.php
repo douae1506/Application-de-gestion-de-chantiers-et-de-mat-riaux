@@ -40,11 +40,9 @@ class ChantierController extends Controller
         return response()->json(['data' => $chantiers]);
     }
 
-    /**
-     * Vérifie qu'un utilisateur "responsable"/"chef_projet" a bien accès
-     * à ce chantier précis (sinon 403). Les autres rôles (admin, magasinier
-     * via permissions) ne sont pas concernés par cette restriction.
-     */
+    
+     // Vérifie qu'un utilisateur "responsable"/"chef_projet" a bien accès à ce chantier précis (sinon 403). Les autres rôles (admin, magasinier via permissions) ne sont pas concernés par cette restriction.
+     
     private function assertAccess(Chantier $chantier, ?\App\Models\User $user): void
     {
         if (!$user) return;
@@ -59,7 +57,7 @@ class ChantierController extends Controller
         }
     }
 
-    // ─── Détail complet ───────────────────────────────────────
+    // Détail complet 
     public function show(Request $request, Chantier $chantier)
     {
         $this->assertAccess($chantier, $request->user());
@@ -74,7 +72,7 @@ class ChantierController extends Controller
         return response()->json(['data' => $this->formatChantierDetail($chantier)]);
     }
 
-    // ─── Création ─────────────────────────────────────────────
+    // Création 
    public function store(Request $request)
     {
         try {
@@ -111,7 +109,7 @@ class ChantierController extends Controller
             ], 500);
         }
     }
-    // ─── Mise à jour ──────────────────────────────────────────
+    // Mise à jour 
     public function update(Request $request, Chantier $chantier)
     {
         $this->assertAccess($chantier, $request->user());
@@ -146,14 +144,14 @@ class ChantierController extends Controller
         ]);
     }
 
-    // ─── Suppression ──────────────────────────────────────────
+    // Suppression 
     public function destroy(Chantier $chantier)
     {
         $chantier->delete();
         return response()->json(['success' => true, 'message' => 'Chantier supprimé']);
     }
 
-    // ─── Projets d'un chantier ────────────────────────────────
+    // Projets d'un chantier 
     public function projets(Request $request, Chantier $chantier)
     {
         $this->assertAccess($chantier, $request->user());
@@ -161,7 +159,7 @@ class ChantierController extends Controller
         return response()->json(['data' => $projets]);
     }
 
-    // ─── Ajouter un projet ────────────────────────────────────
+    // Ajouter un projet 
     public function storeProjet(Request $request, Chantier $chantier)
     {
         $validated = $request->validate([
@@ -190,7 +188,7 @@ class ChantierController extends Controller
         ], 201);
     }
 
-    // ─── Formatage liste ──────────────────────────────────────
+    // Formatage liste 
     private function formatChantier(Chantier $c): array
     {
         return [
@@ -235,7 +233,7 @@ class ChantierController extends Controller
         ];
     }
 
-    // ─── Formatage détail ─────────────────────────────────────
+    // Formatage détail
     private function formatChantierDetail(Chantier $c): array
     {
         $base = $this->formatChantier($c);

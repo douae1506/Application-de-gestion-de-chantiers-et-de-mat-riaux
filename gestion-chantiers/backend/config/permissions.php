@@ -34,6 +34,7 @@ return [
         'view_stocks', 'manage_stocks',
         // ---- Mouvements ----
         'view_mouvements', 'create_entree', 'create_sortie', 'create_transfert', 'delete_mouvement',
+        'affecter_sortie_projet',
         // ---- Documents ----
         'view_documents', 'create_documents', 'delete_documents',
         // ---- Événements ----
@@ -58,6 +59,7 @@ return [
             'view_produits',
             'view_documents', 'create_documents', 'delete_documents',
             'view_evenements', 'create_evenements', 'edit_evenements', 'delete_evenements',
+            'view_mouvements', 'affecter_sortie_projet',
             'view_dashboard',
         ],
 

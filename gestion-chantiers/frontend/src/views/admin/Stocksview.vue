@@ -237,6 +237,7 @@
                     <strong :class="{ 'text-red': p.alerte }">
                       {{ p.quantite }}
                     </strong>
+                    <span>&nbsp;</span>
                     <span :class="{ 'text-red': p.alerte }">
                       {{ p.unite }}
                     </span>

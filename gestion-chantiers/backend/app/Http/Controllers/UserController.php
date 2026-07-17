@@ -76,6 +76,26 @@ class UserController extends Controller
     }
 
     /**
+     * GET /api/admin/users/chefs-projet
+     *
+     * Liste allégée des chefs de projet actifs (id, nom, prénom), utilisée
+     * pour le sélecteur "Responsable" dans le formulaire projet. Accessible
+     * à quiconque peut créer/modifier un projet (admin, responsable), sans
+     * nécessiter la permission 'view_users' réservée à la gestion des
+     * utilisateurs.
+     */
+    public function chefsProjet(): JsonResponse
+    {
+        $chefs = User::query()
+            ->where('role', 'chef_projet')
+            ->where('est_actif', true)
+            ->orderBy('nom')
+            ->get(['id', 'nom', 'prenom', 'email']);
+
+        return response()->json(['data' => $chefs]);
+    }
+
+    /**
      * GET /api/admin/users/{id}
      */
     public function show(User $user): JsonResponse

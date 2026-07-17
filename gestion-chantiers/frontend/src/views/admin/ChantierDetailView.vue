@@ -282,7 +282,7 @@
                     <th class="text-center">Unité</th>
                     <th class="text-right">Coût total</th>
                     <th class="text-center">Statut</th>
-                    <th class="text-center">Action</th>
+                    <th class="text-center" v-if="auth.hasPermission('affecter_sortie_projet')">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -295,7 +295,7 @@
                       <span v-if="m.projet_id" class="affecte-badge">Affecté</span>
                       <span v-else class="non-affecte-badge">Non affecté</span>
                     </td>
-                    <td class="text-center">
+                    <td class="text-center" v-if="auth.hasPermission('affecter_sortie_projet')">
                       <div class="action-group-compact">
                         <button 
                           v-if="!m.projet_id" 
@@ -620,7 +620,7 @@
               </div>
               <div class="materiaux-header-actions">
                 <button
-                  v-if="selectableMateriaux.length"
+                  v-if="selectableMateriaux.length && auth.hasPermission('affecter_sortie_projet')"
                   class="btn btn-sm btn-danger"
                   :disabled="selectedMateriaux.length === 0"
                   @click="returnSelectionToStock"
@@ -635,7 +635,7 @@
               <table class="materiaux-table-full">
                 <thead>
                   <tr>
-                    <th style="width:2.5rem;">
+                    <th style="width:2.5rem;" v-if="auth.hasPermission('affecter_sortie_projet')">
                       <input
                         type="checkbox"
                         :checked="allMateriauxSelected && selectableMateriaux.length > 0"
@@ -651,12 +651,12 @@
                     <th class="text-right">Coût unitaire</th>
                     <th class="text-right">Coût total</th>
                     <th class="text-center">Statut</th>
-                    <th class="text-center">Action</th>
+                    <th class="text-center" v-if="auth.hasPermission('affecter_sortie_projet')">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="m in chantier.materiaux" :key="m.sortie_id" :class="{ 'row-affecte': m.projet_id }">
-                    <td>
+                    <td v-if="auth.hasPermission('affecter_sortie_projet')">
                       <input
                         v-if="!m.projet_id"
                         type="checkbox"
@@ -683,7 +683,7 @@
                         <span class="badge-icon">○</span> Non affecté
                       </span>
                     </td>
-                    <td class="text-center">
+                    <td class="text-center" v-if="auth.hasPermission('affecter_sortie_projet')">
                       <div class="action-group-full">
                         <button 
                           v-if="!m.projet_id" 
@@ -710,7 +710,7 @@
                 </tbody>
                 <tfoot v-if="chantier.materiaux.length > 0">
                   <tr>
-                    <td colspan="9">
+                    <td :colspan="materiauxColCount">
                       <div class="materiaux-footer">
                         <span>
                           Total : <strong>{{ chantier.materiaux.length }}</strong> produits
@@ -991,6 +991,9 @@ const affecterError = ref('')
 // ─── Sélection multiple (annulation groupée) ────────────
 const selectedMateriaux = ref([])
 const selectableMateriaux = computed(() => (chantier.value?.materiaux || []).filter(m => !m.projet_id))
+// 7 colonnes de base (Produit, Catégorie, Quantité, Unité, Coût unitaire, Coût total, Statut)
+// + 2 colonnes supplémentaires (case à cocher, Action) si l'utilisateur peut affecter/annuler.
+const materiauxColCount = computed(() => auth.hasPermission('affecter_sortie_projet') ? 9 : 7)
 const allMateriauxSelected = computed(() =>
   selectableMateriaux.value.length > 0 &&
   selectableMateriaux.value.every(m => selectedMateriaux.value.includes(m.sortie_id))

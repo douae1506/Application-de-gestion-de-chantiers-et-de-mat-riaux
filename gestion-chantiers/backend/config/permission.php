@@ -1,15 +1,5 @@
 <?php
 
-/**
- * Carte des permissions par rôle.
- *
- * Système léger "maison" (pas de package externe) : chaque rôle possède
- * une liste de permissions. Le rôle "admin" possède TOUTES les permissions
- * automatiquement (voir User::hasPermission()).
- *
- * Pour ajouter une permission : l'ajouter dans ALL_PERMISSIONS puis dans
- * la liste du/des rôle(s) concerné(s) ci-dessous.
- */
 
 return [
 
@@ -34,6 +24,7 @@ return [
         'view_stocks', 'manage_stocks',
         // ---- Mouvements ----
         'view_mouvements', 'create_entree', 'create_sortie', 'create_transfert', 'delete_mouvement',
+        'affecter_sortie_projet',
         // ---- Documents ----
         'view_documents', 'create_documents', 'delete_documents',
         // ---- Événements ----
@@ -58,6 +49,7 @@ return [
             'view_produits',
             'view_documents', 'create_documents', 'delete_documents',
             'view_evenements', 'create_evenements', 'edit_evenements', 'delete_evenements',
+            'view_mouvements', 'affecter_sortie_projet',
             'view_dashboard',
         ],
 

@@ -1,7 +1,6 @@
 <?php
 	
 	namespace App\Http\Controllers;
-	
 	use App\Models\Event;
 	use App\Models\Chantier;
 	use Illuminate\Http\Request;
@@ -22,7 +21,7 @@
 	        $validated = $request->validate([
 	            'titre'       => 'required|string|max:255',
 	            'description' => 'nullable|string',
-	            'date'        => 'required|date|after_or_equal:today', // Un nouvel événement doit être futur
+	            'date'        => 'required|date|after_or_equal:today', 
 	            'heure'       => 'nullable|date_format:H:i',
 	            'type'        => ['required', Rule::in(['reunion', 'livraison', 'inspection', 'autre'])],
 	            'statut'      => ['sometimes', Rule::in(['a_venir', 'termine', 'annule'])],
@@ -55,7 +54,7 @@
 	        $validated = $request->validate([
 	            'titre'       => 'sometimes|string|max:255',
 	            'description' => 'nullable|string',
-	            'date'        => 'sometimes|date', // Pas de contrainte "future" ici : on doit pouvoir éditer le passé
+	            'date'        => 'sometimes|date', 
 	            'heure'       => 'nullable|date_format:H:i',
 	            'type'        => ['sometimes', Rule::in(['reunion', 'livraison', 'inspection', 'autre'])],
 	            'statut'      => ['sometimes', Rule::in(['a_venir', 'termine', 'annule'])],
@@ -78,7 +77,7 @@
 	        return response()->json(['success' => true]);
 	    }
 	
-	    // ─── Sécurité : empêche d'agir sur l'événement d'un autre chantier ───
+	    // Sécurité : empêche d'agir sur l'événement d'un autre chantier 
 	    private function ensureBelongsToChantier(Chantier $chantier, Event $event): void
 	    {
 	        if ($event->chantier_id !== $chantier->id) {

@@ -26,9 +26,6 @@ class NotificationService
         ]);
     }
 
-    /**
-     * Envoie la même notification à une collection/liste d'utilisateurs (ou d'ids).
-     */
     public static function sendToUsers(iterable $users, string $type, string $title, string $message, array $data = [], string $icon = '🔔'): void
     {
         foreach ($users as $user) {
@@ -37,36 +34,30 @@ class NotificationService
         }
     }
 
-    /**
-     * Envoie une notification à tous les utilisateurs actifs d'un rôle donné.
-     */
+    // Envoie une notification à tous les utilisateurs actifs d'un rôle donné.
+
     public static function sendToRole(string $role, string $type, string $title, string $message, array $data = [], string $icon = '🔔'): void
     {
         $ids = User::where('role', $role)->where('est_actif', true)->pluck('id');
         static::sendToUsers($ids, $type, $title, $message, $data, $icon);
     }
 
-    /**
-     * Envoie une notification à tous les rôles listés.
-     */
+    
+    // Envoie une notification à tous les rôles listés.
+
     public static function sendToRoles(array $roles, string $type, string $title, string $message, array $data = [], string $icon = '🔔'): void
     {
         $ids = User::whereIn('role', $roles)->where('est_actif', true)->pluck('id');
         static::sendToUsers($ids, $type, $title, $message, $data, $icon);
     }
 
-    /**
-     * Envoie une notification à tous les administrateurs.
-     */
+
     public static function sendToAdmins(string $type, string $title, string $message, array $data = [], string $icon = '🔔'): void
     {
         static::sendToRole('admin', $type, $title, $message, $data, $icon);
     }
 
-    /**
-     * Envoie une notification à toute l'équipe (tous les utilisateurs actifs),
-     * en excluant éventuellement l'auteur de l'action.
-     */
+ 
     public static function sendToTeam(string $type, string $title, string $message, array $data = [], string $icon = '🔔', ?int $excludeUserId = null): void
     {
         $ids = User::where('est_actif', true)
@@ -76,12 +67,6 @@ class NotificationService
         static::sendToUsers($ids, $type, $title, $message, $data, $icon);
     }
 
-    /**
-     * Évite les doublons : n'envoie la notification à l'utilisateur que si
-     * aucune notification du même type/data['ref'] n'a déjà été créée dans
-     * la fenêtre de temps donnée (par défaut : les dernières 20h, ce qui
-     * correspond à "une fois par jour" pour les tâches planifiées).
-     */
     public static function sendOncePerWindow(?int $userId, string $type, string $refKey, string $title, string $message, array $data = [], string $icon = '⚠️', int $windowHours = 20): ?AppNotification
     {
         if (!$userId) {
@@ -103,9 +88,7 @@ class NotificationService
         return static::sendToUser($userId, $type, $title, $message, $data, $icon);
     }
 
-    // ────────────────────────────────────────────────────────────
     // Raccourcis "métier" utilisés dans les modèles / contrôleurs
-    // ────────────────────────────────────────────────────────────
 
     public static function chantierCree($chantier): void
     {
@@ -373,12 +356,12 @@ class NotificationService
         );
     }
 
-    /**
-     * Notifie l'admin + le responsable qu'un chantier approche de sa date de
-     * fin prévue (ex. J-7, J-1). $joursRestants sert de clé pour que les
-     * deux échéances (7 jours, 1 jour) soient bien notifiées séparément et
-     * une seule fois chacune.
-     */
+    
+     // Notifie l'admin + le responsable qu'un chantier approche de sa date de
+     // fin prévue (ex. J-7, J-1). $joursRestants sert de clé pour que les
+     // deux échéances (7 jours, 1 jour) soient bien notifiées séparément et
+     // une seule fois chacune.
+    
     public static function chantierEcheanceProche($chantier, int $joursRestants): void
     {
         $lien = "/admin/chantiers/{$chantier->id}";
@@ -411,10 +394,10 @@ class NotificationService
         );
     }
 
-    /**
-     * Notifie l'admin + le chef de projet (responsable_id du projet) qu'un
-     * projet approche de sa date de fin prévue (ex. J-7, J-1).
-     */
+    
+    // Notifie l'admin + le chef de projet (responsable_id du projet) qu'un
+    // projet approche de sa date de fin prévue (ex. J-7, J-1).
+     
     public static function projetEcheanceProche($projet, int $joursRestants): void
     {
         $lien = "/admin/projets/{$projet->id}";
@@ -469,9 +452,9 @@ class NotificationService
         );
     }
 
-    /**
-     * Comme sendOncePerWindow, mais pour plusieurs rôles à la fois.
-     */
+    
+    // Comme sendOncePerWindow, mais pour plusieurs rôles à la fois.
+    
     public static function sendOncePerWindowToRoles(array $roles, string $type, string $refKey, string $title, string $message, array $data = [], string $icon = '⚠️', int $windowHours = 20): void
     {
         $ids = User::whereIn('role', $roles)->where('est_actif', true)->pluck('id');

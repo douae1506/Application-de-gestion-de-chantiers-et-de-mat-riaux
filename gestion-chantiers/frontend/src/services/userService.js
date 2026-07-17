@@ -9,6 +9,15 @@ export default {
         })
 
     },
+
+    // Liste allégée des chefs de projet (id, nom, prénom), accessible à
+    // l'admin et au responsable (droits create/edit_projets), sans requérir
+    // la permission 'view_users' réservée à la gestion des utilisateurs.
+    getChefsProjet(){
+
+        return api.get('/admin/users/chefs-projet')
+
+    },
    getUser(id){
     return api.get(`/admin/users/${id}`)
 },

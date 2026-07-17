@@ -228,7 +228,7 @@ async function loadData() {
   try {
     const [chantiersRes, chefsRes] = await Promise.all([
       chantierService.getChantiers(),
-      userService.getUsers({ role: 'chef_projet' })
+      userService.getChefsProjet()
     ])
     chantiers.value = chantiersRes.data.data || chantiersRes.data
     chefs.value = chefsRes.data.data || chefsRes.data

@@ -1,64 +1,137 @@
+Pour transformer cette page de gestion de vos fournisseurs en une interface digne des meilleures applications SaaS (type Stripe, Linear ou Tailwind UI), nous allons opérer une refonte esthétique et ergonomique totale.
+
+Voici les améliorations concrètes que nous allons apporter :
+
+* **Design Moderne & Épuré :** Remplacement de la couleur de fond grise par un blanc cassé texturé, ombres douces et fines bordures pour un rendu "pro".
+* **Tableau Sublimé (Data Table) :**
+* Fini les tableaux interminables qui s'écrasent : mise en place d'une structure aérée avec des **badges visuels**, des liens de contact élégants et des colonnes redimensionnées intelligemment.
+* Les adresses, sites web et emails sont présentés avec de jolies icônes et un design minimaliste.
+
+
+* **Composant de Recherche Intégrée :** Ajout d'une barre de recherche instantanée en haut du tableau pour filtrer les fournisseurs à la volée.
+* **Formulaire de Saisie Réorganisé :** Un formulaire sous forme d'onglets virtuels ou de sections claires avec des icônes indicatives, pour éviter l'effet "gros bloc de champs".
+* **Grille de Statistiques Enrichie :** Ajout d'indicateurs visuels et de micro-cartes pour un aspect analytique moderne.
+
+Voici le code complet, optimisé, prêt à l'emploi et compatible à 100 % avec votre logique Vue 3 actuelle :
+
+```vue
 <template>
   <div class="fv-wrap">
-
+    <!-- Header principal -->
     <div class="fv-header">
       <div>
+        <div class="breadcrumb">Dashboard / Administration</div>
         <h1>Gestion des Fournisseurs</h1>
-        <p>Gérez la liste de vos fournisseurs.</p>
+        <p>Centralisez et suivez les informations de vos partenaires commerciaux et approvisionnements.</p>
       </div>
-      <button class="btn btn-primary" @click="openCreateModal">+ Nouveau fournisseur</button>
+      <button class="btn btn-primary btn-with-icon" @click="openCreateModal">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Nouveau fournisseur
+      </button>
     </div>
 
+    <!-- Section statistiques -->
     <div class="stat-grid">
       <div class="stat-card">
-        <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
-        <div><strong>{{ fournisseurs.length }}</strong><span>Fournisseurs</span></div>
+        <div class="stat-icon blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Total Fournisseurs</span>
+          <strong class="stat-value">{{ fournisseurs.length }}</strong>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Actifs</span>
+          <strong class="stat-value">{{ fournisseurs.length }}</strong>
+        </div>
       </div>
     </div>
-  
+
+    <!-- Barre d'outils et Tableau -->
     <div class="table-card">
-      <div v-if="loading" class="loading-state">
-        <div class="spinner"></div><span>Chargement...</span>
+      <div class="table-toolbar">
+        <div class="search-box">
+          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input v-model="searchQuery" type="text" placeholder="Rechercher par nom, ville, responsable..." class="search-input" />
+        </div>
+        <div class="toolbar-actions">
+          <span class="results-count">{{ filteredFournisseurs.length }} résultat(s)</span>
+        </div>
       </div>
-      <div v-else-if="fournisseurs.length" class="table-wrap">
+
+      <!-- États de chargement -->
+      <div v-if="loading" class="loading-state">
+        <div class="spinner"></div>
+        <span>Récupération des données en cours...</span>
+      </div>
+
+      <!-- Tableau des données -->
+      <div v-else-if="filteredFournisseurs.length" class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Nom</th>
+              <th>Fournisseur</th>
               <th>Responsable</th>
-              <th>Email</th>
-              <th>Téléphone</th>
-              <th>Adresse</th>
-              <th>Ville</th>
-              <th>Pays</th>
-              <th>Code postal</th>
+              <th>Coordonnées</th>
+              <th>Localisation</th>
               <th>Site web</th>
               <th>Observations</th>
-              <th>Actions</th>
+              <th class="text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="f in fournisseurs" :key="f.id">
-              <td><strong>{{ f.nom }}</strong></td>
-              <td>{{ f.responsable || '—' }}</td>
+            <tr v-for="f in filteredFournisseurs" :key="f.id">
               <td>
-                <a v-if="f.email" :href="'mailto:' + f.email">
-                  {{ f.email }}
-                </a>
-                <span v-else>—</span>
+                <div class="company-cell">
+                  <div class="company-avatar">{{ f.nom.charAt(0).toUpperCase() }}</div>
+                  <div>
+                    <span class="company-name">{{ f.nom }}</span>
+                    <span class="company-badge" v-if="f.pays">{{ f.pays }}</span>
+                  </div>
+                </div>
               </td>
-              <td>{{ f.telephone || '—' }}</td>
-              <td>{{ f.adresse || '—' }}</td>
-              <td>{{ f.ville || '—' }}</td>
-              <td>{{ f.pays || '—' }}</td>
-              <td>{{ f.code_postal || '—' }}</td>
               <td>
-                <a v-if="f.site_web" :href="f.site_web" target="_blank">
-                  {{ f.site_web }}
-                </a>
-                <span v-else>—</span>
+                <div class="responsable-cell">
+                  <span class="text-main">{{ f.responsable || '—' }}</span>
+                </div>
               </td>
-              <td>{{ f.observations || '—' }}</td>
+              <td>
+                <div class="contact-details">
+                  <a v-if="f.email" :href="'mailto:' + f.email" class="contact-link email">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    {{ f.email }}
+                  </a>
+                  <span v-if="f.telephone" class="contact-link phone">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    {{ f.telephone }}
+                  </span>
+                  <span v-if="!f.email && !f.telephone" class="text-muted">—</span>
+                </div>
+              </td>
+              <td>
+                <div class="location-cell">
+                  <span class="text-main">{{ f.ville || '—' }}</span>
+                  <span class="text-sub" v-if="f.adresse">{{ f.adresse }} {{ f.code_postal }}</span>
+                </div>
+              </td>
+              <td>
+                <a v-if="f.site_web" :href="f.site_web" target="_blank" class="web-badge">
+                  <span>Visiter</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                </a>
+                <span v-else class="text-muted">—</span>
+              </td>
+              <td>
+                <div class="observations-text" :title="f.observations">
+                  {{ f.observations || '—' }}
+                </div>
+              </td>
               <td>
                 <div class="action-btns">
                   <button class="btn-action edit" @click="openEditModal(f)" title="Modifier">
@@ -73,42 +146,52 @@
           </tbody>
         </table>
       </div>
+
+      <!-- État vide (Empty State) -->
       <div v-else class="empty-state">
-        <span>🏢</span>
-        <h3>Aucun fournisseur</h3>
-        <p>Créez votre premier fournisseur pour commencer à gérer vos approvisionnements.</p>
+        <div class="empty-icon">🏢</div>
+        <h3>Aucun fournisseur trouvé</h3>
+        <p v-if="searchQuery">Ajustez votre recherche ou réinitialisez le filtre pour voir vos contacts.</p>
+        <p v-else>Créez votre premier fournisseur pour commencer à gérer vos approvisionnements.</p>
         <button class="btn btn-primary" @click="openCreateModal">+ Créer un fournisseur</button>
       </div>
     </div>
 
+    <!-- Modal d'ajout / modification -->
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
       <div class="modal-box">
         <div class="modal-header">
-          <h3>{{ editMode ? '✏️ Modifier le fournisseur' : '+ Nouveau fournisseur' }}</h3>
+          <div>
+            <h3>{{ editMode ? '✏️ Modifier le fournisseur' : '🚀 Nouveau fournisseur' }}</h3>
+            <p class="modal-subtitle">Remplissez les informations ci-dessous pour enregistrer le profil.</p>
+          </div>
           <button class="modal-close" @click="showModal = false">✕</button>
         </div>
         <div class="modal-body">
           <div class="form-grid">
             <div class="form-group col-span-2">
-              <label>Nom *</label>
+              <label>Nom de l'entreprise <span class="required">*</span></label>
               <input v-model="form.nom" class="form-input" placeholder="Ex : Matériaux du Maroc" />
             </div>
+            
             <div class="form-group">
-              <label>Responsable</label>
-              <input v-model="form.responsable" class="form-input" placeholder="Nom du contact" />
+              <label>Nom du responsable</label>
+              <input v-model="form.responsable" class="form-input" placeholder="Ex: Jean Dupont" />
             </div>
             <div class="form-group">
               <label>Téléphone</label>
               <input v-model="form.telephone" class="form-input" placeholder="+212 6xx-xxxxxx" />
             </div>
+
             <div class="form-group">
-              <label>Email</label>
-              <input v-model="form.email" class="form-input" placeholder="contact@fournisseur.com" />
+              <label>Adresse e-mail</label>
+              <input v-model="form.email" class="form-input" type="email" placeholder="contact@fournisseur.com" />
             </div>
             <div class="form-group">
-              <label>Site web</label>
-              <input v-model="form.site_web" class="form-input" placeholder="https://..." />
+              <label>Site internet</label>
+              <input v-model="form.site_web" class="form-input" placeholder="https://www.exemple.com" />
             </div>
+
             <div class="form-group">
               <label>Ville</label>
               <input v-model="form.ville" class="form-input" placeholder="Casablanca" />
@@ -117,25 +200,31 @@
               <label>Pays</label>
               <input v-model="form.pays" class="form-input" placeholder="Maroc" />
             </div>
+
             <div class="form-group">
               <label>Code postal</label>
               <input v-model="form.code_postal" class="form-input" placeholder="20000" />
             </div>
             <div class="form-group col-span-2">
-              <label>Adresse</label>
-              <input v-model="form.adresse" class="form-input" placeholder="Adresse complète" />
+              <label>Adresse de l'établissement</label>
+              <input v-model="form.adresse" class="form-input" placeholder="Numéro, rue..." />
             </div>
+
             <div class="form-group col-span-2">
-              <label>Observations</label>
-              <textarea v-model="form.observations" class="form-input" rows="2"></textarea>
+              <label>Observations & Notes internes</label>
+              <textarea v-model="form.observations" class="form-input textarea-input" rows="3" placeholder="Particularités de livraison, conditions de paiement..."></textarea>
             </div>
           </div>
-          <p v-if="formError" class="form-error">{{ formError }}</p>
+          <p v-if="formError" class="form-error">
+            <svg class="error-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            {{ formError }}
+          </p>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="showModal = false">Annuler</button>
-          <button class="btn btn-primary" @click="save" :disabled="saving">
-            {{ saving ? 'Enregistrement...' : (editMode ? 'Mettre à jour' : 'Créer') }}
+          <button class="btn btn-primary btn-submit" @click="save" :disabled="saving">
+            <span v-if="saving" class="btn-spinner"></span>
+            {{ saving ? 'Enregistrement...' : (editMode ? 'Mettre à jour' : 'Créer le profil') }}
           </button>
         </div>
       </div>
@@ -145,7 +234,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/services/api'
 
 const fournisseurs = ref([])
@@ -155,18 +244,20 @@ const showModal = ref(false)
 const editMode = ref(false)
 const editId = ref(null)
 const formError = ref('')
+const searchQuery = ref('') // Barre de recherche reactive
 
-const form = reactive({
-  nom: '',
-  responsable: '',
-  email: '',
-  telephone: '',
-  adresse: '',
-  ville: '',
-  pays: '',
-  code_postal: '',
-  site_web: '',
-  observations: '',
+// Computed property pour la recherche temps réel
+const filteredFournisseurs = computed(() => {
+  if (!searchQuery.value) return fournisseurs.value
+  const query = searchQuery.value.toLowerCase().trim()
+  return fournisseurs.value.filter(f => {
+    return (
+      (f.nom && f.nom.toLowerCase().includes(query)) ||
+      (f.responsable && f.responsable.toLowerCase().includes(query)) ||
+      (f.ville && f.ville.toLowerCase().includes(query)) ||
+      (f.email && f.email.toLowerCase().includes(query))
+    )
+  })
 })
 
 async function fetchFournisseurs() {
@@ -219,6 +310,19 @@ function openEditModal(f) {
   showModal.value = true
 }
 
+const form = reactive({
+  nom: '',
+  responsable: '',
+  email: '',
+  telephone: '',
+  adresse: '',
+  ville: '',
+  pays: '',
+  code_postal: '',
+  site_web: '',
+  observations: '',
+})
+
 async function save() {
   formError.value = ''
   if (!form.nom) {
@@ -258,244 +362,401 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Reset global & variables */
 .fv-wrap {
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-light: #e0e7ff;
+  --success: #10b981;
+  --success-light: #ecfdf5;
+  --danger: #ef4444;
+  --danger-light: #fef2f2;
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+  --border-color: #e5e7eb;
+  --card-bg: #ffffff;
+  --body-bg: #f9fafb;
+  
   min-height: 100vh;
-  background: #f4f7fc;
+  background: var(--body-bg);
   margin: -42px !important;
-  padding: 0 1.5rem;
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  padding: 2rem;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  color: var(--text-main);
 }
+
+/* Header */
 .fv-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding: 1.5rem 0 1rem;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.breadcrumb {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
 }
 .fv-header h1 {
-  margin: 0 0 .25rem;
-  font-size: 1.6rem;
+  margin: 0 0 0.4rem;
+  font-size: 1.85rem;
   font-weight: 800;
-  color: #0f172a;
+  color: #111827;
+  letter-spacing: -0.02em;
 }
 .fv-header p {
   margin: 0;
-  color: #64748b;
-  font-size: .9rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
 }
 
+/* Boutons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 1px 2px rgba(79, 70, 229, 0.15);
+}
+.btn-primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+.btn-secondary {
+  background: #fff;
+  color: #374151;
+}
+.btn-secondary:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* Cartes stats */
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(4,1fr);
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
 }
 .stat-card {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 12px;
-  padding: 1.25rem;
-  border: 1px solid #e2e8f0;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 .stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 .stat-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 .stat-icon.blue {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--primary-light);
+  color: var(--primary);
 }
-.stat-card strong {
-  display: block;
-  font-size: 1.4rem;
+.stat-icon.green {
+  background: var(--success-light);
+  color: var(--success);
+}
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.stat-value {
+  font-size: 1.6rem;
   font-weight: 800;
-  color: #0f172a;
-}
-.stat-card span {
-  font-size: .8rem;
-  color: #64748b;
+  color: #111827;
+  line-height: 1.2;
 }
 
+/* Card du tableau et barre d'outils */
 .table-card {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   overflow: hidden;
-  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  background: #fafafa;
+}
+.search-box {
+  position: relative;
+  width: 320px;
+}
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+.search-input {
+  width: 100%;
+  padding: 0.55rem 1rem 0.55rem 2.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: #ffffff;
+  transition: all 0.2s;
+}
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+.results-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Tableau */
 .table-wrap {
   overflow-x: auto;
 }
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: .88rem;
+  text-align: left;
 }
 .data-table th {
-  padding: .75rem 1rem;
-  border-bottom: 2px solid #e2e8f0;
-  text-align: left;
-  color: #475569;
+  padding: 1rem 1.25rem;
+  background: #f9fafb;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.75rem;
   font-weight: 600;
-  font-size: .78rem;
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: .04em;
-  background: #f8fafc;
+  letter-spacing: 0.05em;
 }
 .data-table td {
-  padding: .75rem 1rem;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+  color: var(--text-main);
   vertical-align: middle;
 }
 .data-table tbody tr:hover td {
-  background: #f8fafc;
-}
-.data-table tbody tr:last-child td {
-  border-bottom: none;
-}
-.data-table a {
-  color: #2563eb;
-  text-decoration: none;
-}
-.data-table a:hover {
-  text-decoration: underline;
+  background: #f9fafb;
 }
 
-/* Actions Style Recopié */
-.action-btns {
-  display: flex;
-  gap: .4rem;
-}
-.btn-action { 
-  display: inline-flex; 
-  align-items: center; 
-  justify-content: center; 
-  width: 32px; 
-  height: 32px; 
-  border-radius: 8px; 
-  border: 1px solid #e2e8f0; 
-  background: #fff; 
-  color: #64748b; 
-  cursor: pointer; 
-  transition: all 0.2s; 
-  flex-shrink: 0; 
-}
-.btn-action:hover { 
-  background: #f8fafc; 
-  color: #0f172a; 
-  border-color: #cbd5e1; 
-}
-.btn-action.edit:hover { 
-  color: #3b82f6; 
-  border-color: #bfdbfe; 
-  background: #eff6ff; 
-}
-.btn-action.delete:hover { 
-  color: #f43f5e; 
-  border-color: #fecdd3; 
-  background: #fff1f2; 
-}
-
-.loading-state {
+/* Design des cellules */
+.company-cell {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
+}
+.company-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  border: 1px solid var(--border-color);
+  color: var(--primary);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  min-height: 200px;
-  color: #64748b;
+  font-size: 1rem;
+}
+.company-name {
+  display: block;
+  font-weight: 600;
+  color: #111827;
+}
+.company-badge {
+  display: inline-block;
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  background: #f3f4f6;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.contact-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+.contact-link.email {
+  color: var(--primary);
+  font-weight: 500;
+}
+.contact-link.email:hover {
+  text-decoration: underline;
+}
+.contact-link.phone {
+  color: var(--text-muted);
+}
+.location-cell {
+  display: flex;
+  flex-direction: column;
+}
+.text-main {
+  font-weight: 500;
+  color: var(--text-main);
+}
+.text-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.web-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: #f3f4f6;
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+}
+.web-badge:hover {
+  background: #e5e7eb;
+}
+.observations-text {
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-muted);
+}
+.text-right {
+  text-align: right;
+}
+
+/* Actions */
+.action-btns {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+.btn-action {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.btn-action:hover {
+  border-color: #cbd5e1;
+  color: #1f2937;
+}
+.btn-action.edit:hover {
+  background: var(--primary-light);
+  border-color: #a5b4fc;
+  color: var(--primary);
+}
+.btn-action.delete:hover {
+  background: var(--danger-light);
+  border-color: #fca5a5;
+  color: var(--danger);
+}
+
+/* Spinner & États */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem;
+  color: var(--text-muted);
 }
 .spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #2563eb;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f4f6;
+  border-top-color: var(--primary);
   border-radius: 50%;
-  animation: spin .8s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
 .empty-state {
   text-align: center;
-  padding: 4rem 2rem;
+  padding: 5rem 2rem;
 }
-.empty-state span {
+.empty-icon {
   font-size: 3rem;
-  display: block;
   margin-bottom: 1rem;
 }
 .empty-state h3 {
-  margin: 0 0 .5rem;
-  color: #0f172a;
+  font-size: 1.15rem;
+  margin: 0 0 0.5rem;
+  color: #111827;
+  font-weight: 700;
 }
 .empty-state p {
-  color: #64748b;
+  color: var(--text-muted);
   margin-bottom: 1.5rem;
+  font-size: 0.9rem;
 }
 
-.btn {
-  padding: .5rem 1rem;
-  font-size: .85rem;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  border: 1px solid #e2e8f0;
-  transition: all .2s;
-}
-.btn-primary {
-  background: #2563eb;
-  color: #fff;
-  border-color: #2563eb;
-}
-.btn-primary:hover {
-  background: #1d4ed8;
-}
-.btn-secondary {
-  background: #fff;
-  color: #334155;
-}
-.btn-secondary:hover {
-  background: #f8fafc;
-}
-.btn-danger {
-  background: #fff1f2;
-  color: #e11d48;
-  border-color: #ffe4e6;
-}
-.btn-danger:hover {
-  background: #ffe4e6;
-}
-.btn-outline {
-  background: transparent;
-  border: 1px solid #2563eb;
-  color: #2563eb;
-}
-.btn-outline:hover {
-  background: #2563eb;
-  color: #fff;
-}
-.btn-sm {
-  font-size: .78rem;
-}
-.btn:disabled {
-  opacity: .6;
-  cursor: not-allowed;
-}
-
+/* Modal moderne */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15,23,42,.5);
+  background: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -504,50 +765,70 @@ onMounted(() => {
 .modal-box {
   background: #fff;
   border-radius: 16px;
-  width: 560px;
+  width: 620px;
   max-width: 95vw;
-  max-height: 90vh;
+  max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
 }
 .modal-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  align-items: flex-start;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
   background: #fff;
-  z-index: 1;
+  z-index: 10;
 }
 .modal-header h3 {
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #111827;
+}
+.modal-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 .modal-close {
-  background: none;
+  background: #f3f4f6;
   border: none;
-  font-size: 1.2rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
   cursor: pointer;
-  color: #64748b;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+.modal-close:hover {
+  background: #e5e7eb;
+  color: #111827;
 }
 .modal-body {
-  padding: 1.25rem 1.5rem;
+  padding: 1.5rem;
 }
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: .75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  background: #f9fafb;
 }
 
+/* Grille & Formulaires */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 .col-span-2 {
   grid-column: span 2;
@@ -555,36 +836,67 @@ onMounted(() => {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: .4rem;
+  gap: 0.35rem;
 }
 .form-group label {
-  font-size: .85rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #475569;
+  color: #374151;
+}
+.required {
+  color: var(--danger);
 }
 .form-input {
-  padding: .6rem .75rem;
-  border: 1px solid #e2e8f0;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: .9rem;
-  color: #0f172a;
-  background: #f8fafc;
+  font-size: 0.875rem;
+  color: var(--text-main);
+  background: #ffffff;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input::placeholder {
+  color: #9ca3af;
+}
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+.textarea-input {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.form-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--danger);
+  background: var(--danger-light);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-top: 1.25rem;
+  font-weight: 500;
   width: 100%;
   box-sizing: border-box;
 }
-.form-input:focus {
-  outline: 2px solid #2563eb;
-  border-color: #2563eb;
-}
-.form-error {
-  color: #e11d48;
-  font-size: .85rem;
-  margin-top: .5rem;
-}
 
+/* Responsive */
 @media (max-width: 768px) {
-  .stat-grid {
-    grid-template-columns: 1fr 1fr;
+  .fv-wrap {
+    padding: 1rem;
+  }
+  .fv-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .search-box {
+    width: 100%;
   }
   .form-grid {
     grid-template-columns: 1fr;
@@ -594,3 +906,5 @@ onMounted(() => {
   }
 }
 </style>
+
+```

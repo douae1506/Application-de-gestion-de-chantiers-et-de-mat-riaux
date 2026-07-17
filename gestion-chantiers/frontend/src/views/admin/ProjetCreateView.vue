@@ -101,14 +101,9 @@
               <input class="form-control" type="date" v-model="form.date_fin_prevue">
             </div>
 
-            <div class="form-group">
+            <div class="form-group span2">
               <label>Budget (MAD)</label>
-              <input class="form-control" type="number" step="0.01" v-model="form.budget" placeholder="0.00">
-            </div>
-
-            <div class="form-group">
-              <label>Couleur (hex)</label>
-              <input class="form-control" type="color" v-model="form.couleur" style="height:42px;padding:4px;">
+              <input class="form-control "  type="number" step="0.01" v-model="form.budget" placeholder="0.00">
             </div>
 
             <div class="form-group span2">
@@ -211,7 +206,7 @@ async function loadData() {
   try {
     const [chantiersRes, chefsRes] = await Promise.all([
       chantierService.getChantiers(),
-      userService.getUsers({ role: 'chef_projet' }) // On suppose que le service supporte un filtre
+      userService.getChefsProjet()
     ])
     chantiers.value = chantiersRes.data.data || chantiersRes.data
     chefs.value = chefsRes.data.data || chefsRes.data

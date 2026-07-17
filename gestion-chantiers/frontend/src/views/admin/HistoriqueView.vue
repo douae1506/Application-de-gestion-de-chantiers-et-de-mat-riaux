@@ -1,3 +1,4 @@
+
 <template>
   <div class="historique-page">
     <div class="page-header">
@@ -78,24 +79,24 @@
               </div>
             </div>
 
-            <!-- Cas des créations -->
+            <!-- Cas des créations (Affichage sous forme de tags/pills) -->
             <div v-else-if="act.action === 'created'" class="info-block info-block--created">
               <p class="info-title">Éléments créés</p>
-              <div class="prop-grid">
-                <div class="prop-row" v-for="(value, key) in cleanProps(act.properties)" :key="key">
-                  <span class="prop-label">{{ formatFieldName(key) }}</span>
-                  <span class="prop-value">{{ formatValue(value) }}</span>
+              <div class="pills-grid">
+                <div class="prop-pill" v-for="(value, key) in cleanProps(act.properties)" :key="key">
+                  <span class="pill-label">{{ formatFieldName(key) }} :</span>
+                  <span class="pill-value">{{ formatValue(value) }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- Cas des suppressions -->
+            <!-- Cas des suppressions (Style Fiche Archivée / Barrée) -->
             <div v-else-if="act.action === 'deleted'" class="info-block info-block--deleted">
-              <p class="info-title">Éléments supprimés</p>
-              <div class="prop-grid">
-                <div class="prop-row" v-for="(value, key) in cleanProps(act.properties)" :key="key">
-                  <span class="prop-label">{{ formatFieldName(key) }}</span>
-                  <span class="prop-value">{{ formatValue(value) }}</span>
+              <p class="info-title">Éléments supprimés (Données archivées)</p>
+              <div class="archive-list">
+                <div class="archive-row" v-for="(value, key) in cleanProps(act.properties)" :key="key">
+                  <span class="archive-label">{{ formatFieldName(key) }}</span>
+                  <span class="archive-value">{{ formatValue(value) }}</span>
                 </div>
               </div>
             </div>
@@ -107,12 +108,12 @@
               <span class="status-pill status-pill--new">{{ formatValue(act.properties.new_status) }}</span>
             </div>
 
-            <!-- Cas générique -->
-            <div v-else class="info-block">
-              <div class="prop-grid">
-                <div class="prop-row" v-for="(value, key) in cleanProps(act.properties)" :key="key">
-                  <span class="prop-label">{{ formatFieldName(key) }}</span>
-                  <span class="prop-value">{{ formatValue(value) }}</span>
+            <!-- Cas générique (Simple liste clé/valeur alignée à gauche, très épurée) -->
+            <div v-else class="info-block info-block--generic">
+              <div class="generic-list">
+                <div class="generic-row" v-for="(value, key) in cleanProps(act.properties)" :key="key">
+                  <span class="generic-label">{{ formatFieldName(key) }} :</span>
+                  <span class="generic-value">{{ formatValue(value) }}</span>
                 </div>
               </div>
             </div>
@@ -299,7 +300,6 @@ function formatFieldName(key) {
 }
 
 // Transforme un objet imbriqué en texte lisible "clé: valeur, clé: valeur"
-// (utilisé UNIQUEMENT en dernier recours, jamais de JSON.stringify)
 function objectToReadableText(obj) {
   if (obj === null || obj === undefined) return '—'
   if (Array.isArray(obj)) {
@@ -385,13 +385,12 @@ onMounted(fetchActivities)
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 .historique-page {
-  /* Modifications ici pour un arrière-plan blanc */
   --ink: #12172b;
   --muted: #6b7280;
-  --paper: #ffffff;        /* L'arrière-plan de la page devient blanc */
-  --surface: #ffffff;      /* Les cartes restent blanches */
-  --detail-bg: #f8fafc;    /* Fond gris très clair pour détacher les détails */
-  --rule: #e2e8f0;         /* Bordures légèrement plus prononcées pour compenser le fond blanc */
+  --paper: #ffffff;        
+  --surface: #ffffff;     
+  --detail-bg: #f8fafc;    
+  --rule: #e2e8f0;         
   --accent: #f5a524;
   --accent-ink: #92400e;
   --created: #0e9f6e;
@@ -405,7 +404,7 @@ onMounted(fetchActivities)
   --restored: #8b5cf6;
   --restored-bg: #f2edfd;
 
-  padding: 2rem clamp(1rem, 3vw, 2.5rem);
+  padding: 0;
   background: var(--paper);
   min-height: 100vh;
   font-family: 'Inter', system-ui, sans-serif;
@@ -471,7 +470,6 @@ onMounted(fetchActivities)
   padding: 0.85rem;
   border-radius: 14px;
   border: 1px solid var(--rule);
-  /* Ombre subtile ajoutée pour détacher la ligne du fond blanc */
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
@@ -497,7 +495,7 @@ onMounted(fetchActivities)
   width: 100%;
   font-size: 0.88rem;
   font-family: inherit;
-  background: #f8fafc; /* Un gris très léger pour le champ de recherche */
+  background: #f8fafc;
   transition: all 0.15s;
 }
 
@@ -585,7 +583,6 @@ onMounted(fetchActivities)
   border-radius: 14px;
   padding: 1.1rem 1.25rem;
   margin-bottom: 1.1rem;
-  /* Légère ombre par défaut pour la détacher du fond blanc */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
@@ -637,7 +634,7 @@ onMounted(fetchActivities)
 }
 
 .activity-details {
-  background: var(--detail-bg); /* Utilisation du fond gris très clair */
+  background: var(--detail-bg);
   padding: 0.85rem 1rem;
   border-radius: 10px;
   font-size: 0.88rem;
@@ -645,6 +642,7 @@ onMounted(fetchActivities)
   border: 1px solid var(--rule);
 }
 
+/* 1. Modifications */
 .changes-list {
   display: flex;
   flex-direction: column;
@@ -703,37 +701,80 @@ onMounted(fetchActivities)
   font-family: 'Space Grotesk', sans-serif;
 }
 
-.info-block--created .info-title { color: var(--created); }
-.info-block--deleted .info-title { color: var(--deleted); }
-
-.prop-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.3rem 1.5rem;
+/* 2. Création : Pills */
+.info-block--created .info-title {
+  color: var(--created);
+  margin-bottom: 0.75rem;
 }
 
-.prop-row {
+.pills-grid {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 0.5rem;
-  padding: 0.3rem 0;
-  border-bottom: 1px dashed var(--rule);
-  font-size: 0.83rem;
 }
 
-.prop-row:last-child { border-bottom: none; }
+.prop-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #ffffff;
+  border: 1px solid #d1fae5;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
 
-.prop-label {
+.pill-label {
   color: var(--muted);
   font-weight: 500;
 }
 
-.prop-value {
-  color: var(--ink);
+.pill-value {
+  color: #065f46;
   font-weight: 600;
-  text-align: right;
 }
 
+/* 3. Suppression : Archive stylisée */
+.info-block--deleted .info-title {
+  color: var(--deleted);
+  margin-bottom: 0.75rem;
+}
+
+.archive-list {
+  background: #fff5f5;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #fee2e2;
+}
+
+.archive-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed #fca5a5;
+  font-size: 0.83rem;
+}
+
+.archive-row:last-child {
+  border-bottom: none;
+}
+
+.archive-label {
+  color: #991b1b;
+  font-weight: 500;
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+
+.archive-value {
+  color: #7f1d1d;
+  font-weight: 600;
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+
+/* 4. Statuts */
 .status-change {
   display: flex;
   align-items: center;
@@ -763,6 +804,31 @@ onMounted(fetchActivities)
   color: #b8bfd1;
 }
 
+/* 5. Cas Générique */
+.generic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.generic-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.83rem;
+}
+
+.generic-label {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.generic-value {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ---------- Badges & Métadonnées ---------- */
 .activity-meta {
   display: flex;
   gap: 0.4rem;
@@ -919,9 +985,6 @@ mark {
   .filter-select { width: 100%; min-width: unset; }
   .change-item { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
   .change-values { width: 100%; justify-content: flex-start; }
-  .prop-grid { grid-template-columns: 1fr; }
-  .prop-row { flex-direction: column; gap: 0.1rem; }
-  .prop-value { text-align: left; }
   .activity-header { flex-direction: column; align-items: flex-start; }
   .activity-date { margin-left: 0; }
   .activity-rail { display: none; }

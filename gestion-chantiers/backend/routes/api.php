@@ -53,6 +53,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('permission:view_dashboard')->get('/dashboard/stats', [DashboardController::class, 'stats']);
 
         // USERS (admin uniquement dans la matrice de permissions)
+        // Route statique déclarée AVANT /users/{user} pour éviter qu'elle ne
+        // soit interceptée par la contrainte de permission 'view_users'.
+        Route::middleware('permission:create_projets,edit_projets')->get('/users/chefs-projet', [UserController::class, 'chefsProjet']);
         Route::middleware('permission:view_users')->group(function () {
             Route::get('/users',        [UserController::class, 'index']);
             Route::get('/users/{user}', [UserController::class, 'show']);
@@ -145,8 +148,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // ─── MOUVEMENTS (entrées / sorties / transferts) ────────
         Route::middleware('permission:view_mouvements')->get('mouvements', [MouvementController::class, 'index']);
         Route::middleware('permission:create_entree')->post('mouvements/entree', [MouvementController::class, 'entree']);
-        Route::middleware('permission:create_sortie')->group(function () {
-            Route::post('mouvements/sortie', [MouvementController::class, 'sortie']);
+        Route::middleware('permission:create_sortie')->post('mouvements/sortie', [MouvementController::class, 'sortie']);
+        // Affecter un matériel sorti à un projet / annuler (retour au stock) :
+        // permission dédiée, distincte de 'create_sortie', pour pouvoir
+        // l'accorder au responsable sans l'accorder au magasinier.
+        Route::middleware('permission:affecter_sortie_projet')->group(function () {
             Route::put('/mouvements/sortie/{sortie}/affecter-projet', [MouvementController::class, 'affecterSortieAProjet']);
             Route::post('/mouvements/sortie/{sortie}/retour-stock',   [MouvementController::class, 'retourStock']);
             Route::post('/mouvements/sortie/retour-stock-bulk',       [MouvementController::class, 'retourStockBulk']);

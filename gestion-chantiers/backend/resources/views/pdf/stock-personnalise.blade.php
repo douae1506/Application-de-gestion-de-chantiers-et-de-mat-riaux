@@ -39,6 +39,6 @@
     </tbody>
 </table>
 <div class="summary-row">
-    <div class="summary-box"><div class="val">{{ count($lignes) }}</div><div class="lbl">Lignes</div></div>
+    <div class="summary-box"><div class="val">{{ count($lignes) }}</div><div class="lbl">Produits</div></div>
 </div>
 @endsection

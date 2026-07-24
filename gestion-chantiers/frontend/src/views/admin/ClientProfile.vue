@@ -189,7 +189,52 @@
     </div>
 </div>
 </template>
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import clientService from '@/services/clientService'
 
+// 1. Créer les variables
+const loading = ref(true)     // pour le chargement
+const error = ref(null)       // pour les erreurs
+const client = ref(null)      // pour les données du client
+
+const route = useRoute()
+
+// 2. Fonction pour charger le client
+const loadClient = async () => {
+  loading.value = true
+  try {
+    const response = await clientService.getClient(route.params.id)
+    client.value = response.data.data || response.data
+  } catch (err) {
+    error.value = "Erreur de chargement"
+  } finally {
+    loading.value = false
+  }
+}
+
+// 3. Charger au démarrage
+onMounted(() => {
+  loadClient()
+})
+
+// 4. Vos fonctions existantes (formatDate, getBadgeClass, etc.)
+const formatDate = (date) => {
+  if (!date) return '—'
+  return new Date(date).toLocaleDateString('fr-FR')
+}
+
+const getBadgeClass = (type) => {
+  // Vos classes existantes
+  const classes = {
+    'vip': 'badge-vip',
+    'pro': 'badge-pro',
+    // ... etc
+  }
+  return classes[type] || 'badge-default'
+}
+</script>
 <style scoped>
 /* --- CONFIGURATION DES NUANCES CLAIRES --- */
 .crm-viewport {

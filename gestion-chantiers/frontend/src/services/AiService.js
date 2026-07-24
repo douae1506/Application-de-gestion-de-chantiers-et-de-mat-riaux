@@ -1,27 +1,12 @@
 import api from './api'
 
+// Tous les appels à Gemini transitent par le backend Laravel : ce service
+// n'appelle jamais l'API Gemini directement, la clé API n'existe que
+// côté serveur (voir backend/.env : GEMINI_API_KEY).
 export default {
-
-  // Fonctionnalité 1 : Chat IA
-  getHistory() {
-    return api.get('/admin/ia/history')
+  // Fonctionnalité 1 : chat IA
+  chat(message, history = []) {
+    return api.post('/admin/ai/chat', { message, history })
   },
 
-  clearHistory() {
-    return api.delete('/admin/ia/history')
-  },
-
-  sendMessage(message) {
-    return api.post('/admin/ia/chat', { message })
-  },
-
-  // Fonctionnalité 2 : Résumé intelligent d'un chantier
-  resumeChantier(chantierId) {
-    return api.post(`/admin/ia/chantiers/${chantierId}/resume`)
-  },
-
-  // Fonctionnalité 3 : Analyse intelligente du stock
-  analyseStock() {
-    return api.post('/admin/ia/stock/analyse')
-  },
 }

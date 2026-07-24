@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    // Assistant IA (module chat / résumés / analyse de stock) : appels
+    // effectués uniquement depuis le backend, jamais depuis le frontend.
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.0-flash'),
+    ],
+
 ];

@@ -43,6 +43,13 @@
           <span>Utilisateurs</span>
         </RouterLink>
 
+        <RouterLink v-if="auth.hasPermission('view_dashboard')" to="/admin/assistant-ia" class="nav-item" active-class="active">
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.6 4.2L18 9l-4.4 1.8L12 15l-1.6-4.2L6 9l4.4-1.8L12 3z"/><path d="M19 15l.8 2.1L22 18l-2.2.9L19 21l-.8-2.1L16 18l2.2-.9L19 15z"/></svg>
+          </div>
+          <span>Assistant IA</span>
+        </RouterLink>
+
         <p class="nav-section-label">CHANTIERS</p>
 
         <RouterLink v-if="auth.hasPermission('view_clients')" to="/admin/clients" class="nav-item" active-class="active">

@@ -26,6 +26,7 @@ import MouvementsView from '@/views/admin/MouvementsView.vue'
 import RapportsView from '@/views/admin/RapportsView.vue'
 import FournisseursView from '@/views/admin/FournisseursView.vue'
 import HistoriqueView from '@/views/admin/HistoriqueView.vue'
+import AssistantIaView from '@/views/admin/AssistantIaView.vue'
 
 const routes = [
   // Routes publiques (guest)
@@ -79,6 +80,7 @@ const routes = [
       { path: 'clients/:id', name: 'client-profile', component: () => import('@/views/admin/ClientProfile.vue'), meta: { permission: 'view_clients' } },
       { path: 'fournisseurs', name: 'AdminFournisseurs', component: FournisseursView, meta: { permission: 'view_fournisseurs' } },
       { path: 'historique', name: 'historique', component: HistoriqueView, meta: { requiresAuth: true, role: 'admin' } },
+      { path: 'assistant-ia', name: 'AssistantIa', component: AssistantIaView, meta: { permission: 'view_dashboard' } },
     ]
   },
 

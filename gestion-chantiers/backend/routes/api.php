@@ -20,6 +20,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\PrintController;
+use App\Http\Controllers\AiAssistantController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
@@ -186,6 +187,15 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('rapports/mouvements',   [RapportController::class, 'mouvements']);
             Route::get('rapports/chantiers',    [RapportController::class, 'chantiers']);
         });
+
+        // ─── ASSISTANT IA (Gemini) ────────────────────────────────
+        // Chat : accessible à tous les rôles ayant accès au tableau de bord.
+        Route::middleware('permission:view_dashboard')->post('ai/chat', [AiAssistantController::class, 'chat']);
+        // Résumé IA d'un chantier : mêmes droits que la consultation d'un chantier.
+        Route::middleware('permission:view_chantiers')->post('ai/chantiers/{chantier}/resume', [AiAssistantController::class, 'chantierResume']);
+        // Analyse IA du stock : mêmes droits que la consultation des dépôts.
+        Route::middleware('permission:view_stocks')->post('ai/stock/analyse', [AiAssistantController::class, 'stockAnalyse']);
+
 Route::middleware('permission:view_evenements')->get(
     '/events',
     [EventController::class, 'all']

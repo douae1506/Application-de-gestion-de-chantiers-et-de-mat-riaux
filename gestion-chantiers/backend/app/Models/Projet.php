@@ -119,10 +119,6 @@ class Projet extends Model
         $this->update(['cout_reel' => $total]);
     }
 
-    /**
- * Met à jour la progression et le statut du projet à partir de ses phases,
- * puis déclenche la mise à jour du chantier parent.
- */
     public function updateStatusAndProgress()
     {
         $this->load('phases');

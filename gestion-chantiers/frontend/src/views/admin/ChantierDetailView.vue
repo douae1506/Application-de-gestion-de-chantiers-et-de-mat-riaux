@@ -22,6 +22,7 @@
             <button class="btn btn-secondary" @click="$router.push({ name: 'AdminChantiers' })">Retour à la liste</button>
             <button v-if="auth.hasPermission('edit_chantiers')" class="btn btn-secondary" @click="editChantier">Modifier</button>
             <button v-if="auth.hasPermission('delete_chantiers')" class="btn btn-danger" @click="deleteChantier">Supprimer</button>
+            <AiChantierResumeModal :chantier-id="chantierId" />
           </div>
         </div>
 
@@ -887,6 +888,7 @@ import { useRoute, useRouter } from 'vue-router'
 import chantierService from '@/services/chantierService'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
+import AiChantierResumeModal from '@/components/AiChantierResumeModal.vue'
 
 
 // ─── Router ──────────────────────────────────────────────

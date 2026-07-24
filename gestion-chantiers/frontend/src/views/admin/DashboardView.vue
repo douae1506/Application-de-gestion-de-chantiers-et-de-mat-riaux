@@ -9,48 +9,7 @@
         <h1 class="light-title">Tableau de bord</h1>
         <p class="light-subtitle">Suivez vos chantiers, projets et activités en un coup d'œil</p>
       </div>
-      <div class="header-actions" ref="datePickerRef">
-        <div
-          class="date-picker-mock light"
-          :class="{ active: showDatePicker }"
-          @click="showDatePicker = !showDatePicker"
-        >
-          <CalendarDays :size="16" :stroke-width="2.2" class="icon-calendar-light" />
-          <span>{{ dateRangeLabel }}</span>
-          <ChevronDown :size="14" :stroke-width="2.4" class="arrow-down-light" :class="{ rotated: showDatePicker }" />
-        </div>
-
-        <!-- ─── POPOVER PLAGE DE DATES ─── -->
-        <div v-if="showDatePicker" class="date-picker-popover" @click.stop>
-          <div class="date-picker-presets">
-            <button
-              v-for="preset in datePresets"
-              :key="preset.key"
-              type="button"
-              class="preset-btn"
-              :class="{ selected: activePreset === preset.key }"
-              @click="applyPreset(preset.key)"
-            >
-              {{ preset.label }}
-            </button>
-          </div>
-          <div class="date-picker-divider"></div>
-          <div class="date-picker-custom">
-            <label class="date-field">
-              <span>Du</span>
-              <input type="date" v-model="customStart" :max="customEnd || undefined" @change="activePreset = 'custom'" />
-            </label>
-            <label class="date-field">
-              <span>Au</span>
-              <input type="date" v-model="customEnd" :min="customStart || undefined" @change="activePreset = 'custom'" />
-            </label>
-          </div>
-          <div class="date-picker-actions">
-            <button type="button" class="btn-reset" @click="resetDateRange">Réinitialiser</button>
-            <button type="button" class="btn-apply" :disabled="!customStart || !customEnd" @click="confirmDateRange">Appliquer</button>
-          </div>
-        </div>
-      </div>
+     
     </header>
 
     <!-- État de chargement -->

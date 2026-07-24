@@ -357,10 +357,6 @@ class NotificationService
     }
 
     
-     // Notifie l'admin + le responsable qu'un chantier approche de sa date de
-     // fin prévue (ex. J-7, J-1). $joursRestants sert de clé pour que les
-     // deux échéances (7 jours, 1 jour) soient bien notifiées séparément et
-     // une seule fois chacune.
     
     public static function chantierEcheanceProche($chantier, int $joursRestants): void
     {
